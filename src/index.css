@@ -22,6 +22,30 @@ html {
   scroll-behavior: smooth;
 }
 
+/* Accessibility: Reduce motion */
+.reduce-motion * {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+}
+
+/* High contrast mode */
+.high-contrast {
+  --neon-purple: #ffffff;
+  --neon-blue: #ffffff;
+  --neon-pink: #ffffff;
+  --neon-cyan: #ffffff;
+  --neon-green: #ffffff;
+}
+
+.high-contrast .text-gray-400 {
+  color: #ffffff !important;
+}
+
+.high-contrast .text-gray-300 {
+  color: #ffffff !important;
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
@@ -77,11 +101,51 @@ html {
   }
 }
 
+/* Shimmer effect for loading */
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 2s infinite;
+}
+
 /* Focus styles */
 input:focus,
 button:focus {
   outline: 2px solid rgba(139, 92, 246, 0.5);
   outline-offset: 2px;
+}
+
+/* Custom range slider */
+.slider {
+  background: linear-gradient(to right, #8B5CF6 0%, #8B5CF6 var(--value, 0%), #4B5563 var(--value, 0%), #4B5563 100%);
+}
+
+.slider::-webkit-slider-thumb {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #8B5CF6;
+  cursor: pointer;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #8B5CF6;
+  cursor: pointer;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
 }
 
 /* Custom animations */
@@ -109,4 +173,52 @@ button:focus {
 
 .pulse-glow {
   animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* Touch gestures */
+.touch-pan-y {
+  touch-action: pan-y;
+}
+
+/* PWA specific styles */
+@media (display-mode: standalone) {
+  body {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+  .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  
+  /* Larger touch targets */
+  button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Better text readability */
+  body {
+    font-size: 16px;
+    line-height: 1.5;
+  }
+}
+
+/* Tablet optimizations */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .container {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+}
+
+/* Print styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
 }

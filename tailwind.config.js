@@ -1,6 +1,7 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
+  darkMode: 'class',
   theme: {
     extend: {
       fontFamily: {
@@ -48,6 +49,7 @@ export default {
         'gradient': 'gradient 8s linear infinite',
         'glow': 'glow 2s ease-in-out infinite alternate',
         'bounce-slow': 'bounce 3s infinite',
+        'shimmer': 'shimmer 2s infinite',
       },
       keyframes: {
         float: {
@@ -62,11 +64,25 @@ export default {
           from: { boxShadow: '0 0 20px rgba(139, 92, 246, 0.5)' },
           to: { boxShadow: '0 0 40px rgba(139, 92, 246, 0.8)' },
         },
+        shimmer: {
+          '0%': { transform: 'translateX(-100%)' },
+          '100%': { transform: 'translateX(100%)' },
+        },
       },
       boxShadow: {
         'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.37)',
         'neon': '0 0 20px rgba(139, 92, 246, 0.5)',
         'neon-strong': '0 0 40px rgba(139, 92, 246, 0.8)',
+      },
+      screens: {
+        'xs': '475px',
+        'tall': { 'raw': '(min-height: 800px)' },
+        'short': { 'raw': '(max-height: 600px)' },
+      },
+      spacing: {
+        '18': '4.5rem',
+        '88': '22rem',
+        '128': '32rem',
       },
     },
   },

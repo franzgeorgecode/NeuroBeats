@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ParticleBackground } from './components/ui/ParticleBackground';
@@ -11,6 +11,10 @@ import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { ToastContainer } from './components/ui/Toast';
 import { OnboardingFlow } from './components/onboarding/OnboardingFlow';
 import { SearchBar } from './components/search/SearchBar';
+import { SocialShare } from './components/social/SocialShare';
+import { SettingsPanel } from './components/settings/SettingsPanel';
+import { InstallPrompt } from './components/pwa/InstallPrompt';
+import { MobileGestures } from './components/mobile/MobileGestures';
 import { HomePage } from './pages/HomePage';
 import { DiscoverPage } from './pages/DiscoverPage';
 import { GenresPage } from './pages/GenresPage';
@@ -22,14 +26,70 @@ import { UserProfile } from './components/auth/UserProfile';
 import { useAppStore } from './stores/appStore';
 import { useAuth } from './hooks/useAuth';
 import { useOnboarding } from './hooks/useOnboarding';
+import { useSettingsStore } from './stores/settingsStore';
+import { serviceWorkerManager } from './services/serviceWorker';
 
 const queryClient = new QueryClient();
 
 function AppContent() {
-  const { sidebarCollapsed, currentPage, setCurrentPage } = useAppStore();
+  const { sidebarCollapsed, currentPage, setCurrentPage, theme } = useAppStore();
   const { isAuthenticated } = useAuth();
   const { shouldShowOnboarding, isLoading: onboardingLoading } = useOnboarding();
+  const { accessibility } = useSettingsStore();
+  
   const [authModal, setAuthModal] = useState({ isOpen: false, mode: 'signin' as 'signin' | 'signup' });
+  const [shareModal, setShareModal] = useState({ isOpen: false, track: null, playlist: null });
+  const [settingsOpen, setSettingsOpen] = useState(false);
+
+  // Apply accessibility settings
+  useEffect(() => {
+    const root = document.documentElement;
+    
+    // Font size
+    root.style.fontSize = accessibility.fontSize === 'small' ? '14px' : 
+                         accessibility.fontSize === 'large' ? '18px' : '16px';
+    
+    // High contrast
+    if (accessibility.highContrast) {
+      root.classList.add('high-contrast');
+    } else {
+      root.classList.remove('high-contrast');
+    }
+    
+    // Reduce motion
+    if (accessibility.reduceMotion) {
+      root.classList.add('reduce-motion');
+    } else {
+      root.classList.remove('reduce-motion');
+    }
+  }, [accessibility]);
+
+  // Apply theme
+  useEffect(() => {
+    const root = document.documentElement;
+    
+    if (theme === 'auto') {
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      root.classList.toggle('dark', mediaQuery.matches);
+      root.classList.toggle('light', !mediaQuery.matches);
+      
+      const handleChange = (e: MediaQueryListEvent) => {
+        root.classList.toggle('dark', e.matches);
+        root.classList.toggle('light', !e.matches);
+      };
+      
+      mediaQuery.addEventListener('change', handleChange);
+      return () => mediaQuery.removeEventListener('change', handleChange);
+    } else {
+      root.classList.remove('dark', 'light');
+      root.classList.add(theme);
+    }
+  }, [theme]);
+
+  // Initialize service worker
+  useEffect(() => {
+    serviceWorkerManager.register();
+  }, []);
 
   // Show onboarding if user needs it
   if (isAuthenticated && shouldShowOnboarding && !onboardingLoading) {
@@ -84,7 +144,7 @@ function AppContent() {
   };
 
   return (
-    <div className="min-h-screen bg-dark-600 text-white font-inter overflow-x-hidden">
+    <MobileGestures className="min-h-screen bg-dark-600 text-white font-inter overflow-x-hidden">
       <ParticleBackground />
       
       <div className="relative z-10">
@@ -115,8 +175,21 @@ function AppContent() {
         }))}
       />
 
+      <SocialShare
+        isOpen={shareModal.isOpen}
+        onClose={() => setShareModal({ isOpen: false, track: null, playlist: null })}
+        track={shareModal.track}
+        playlist={shareModal.playlist}
+      />
+
+      <SettingsPanel
+        isOpen={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+      />
+
+      <InstallPrompt />
       <ToastContainer />
-    </div>
+    </MobileGestures>
   );
 }
 
