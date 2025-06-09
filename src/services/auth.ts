@@ -54,16 +54,29 @@ export class AuthService {
   // OAuth Authentication
   static async signInWithProvider(provider: Provider) {
     try {
-      // Ensure we're using the correct redirect URL
-      const redirectTo = `${window.location.origin}/auth/callback`;
-      console.log(`Redirecting to: ${redirectTo}`);
+      // Get the current URL for redirect
+      const currentUrl = window.location.origin;
+      const redirectTo = `${currentUrl}/auth/callback`;
+      
+      console.log(`Attempting OAuth with ${provider}`);
+      console.log(`Redirect URL: ${redirectTo}`);
+      
+      // Verify Supabase URL is configured
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      if (!supabaseUrl || supabaseUrl === 'your_supabase_url_here') {
+        throw new Error('Supabase URL not configured. Please check your environment variables.');
+      }
+      
+      console.log(`Supabase URL: ${supabaseUrl}`);
       
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
           redirectTo,
-          // Add scopes as needed for each provider
-          scopes: provider === 'github' ? 'user:email' : undefined,
+          // Add specific scopes for each provider
+          scopes: provider === 'github' ? 'user:email' : 
+                 provider === 'google' ? 'email profile' :
+                 provider === 'discord' ? 'identify email' : undefined,
         },
       });
 
@@ -190,6 +203,29 @@ export class AuthService {
       errors.push('Username can only contain letters, numbers, and underscores');
     }
 
+    return {
+      isValid: errors.length === 0,
+      errors,
+    };
+  }
+
+  // Check if Supabase is properly configured
+  static checkConfiguration(): { isValid: boolean; errors: string[] } {
+    const errors: string[] = [];
+    
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+    
+    if (!supabaseUrl || supabaseUrl === 'your_supabase_url_here') {
+      errors.push('Supabase URL is not configured');
+    } else if (!supabaseUrl.includes('.supabase.co')) {
+      errors.push('Invalid Supabase URL format');
+    }
+    
+    if (!supabaseKey || supabaseKey === 'your_supabase_anon_key_here') {
+      errors.push('Supabase anonymous key is not configured');
+    }
+    
     return {
       isValid: errors.length === 0,
       errors,

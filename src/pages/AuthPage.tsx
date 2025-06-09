@@ -1,11 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Music, Waves, Zap } from 'lucide-react';
+import { Music, Waves, Zap, AlertTriangle } from 'lucide-react';
 import { AuthForm } from '../components/auth/AuthForm';
 import { ParticleBackground } from '../components/ui/ParticleBackground';
+import { AuthService } from '../services/auth';
+import { GlassCard } from '../components/ui/GlassCard';
 
 export const AuthPage: React.FC = () => {
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
+  const [configError, setConfigError] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Check Supabase configuration on page load
+    const config = AuthService.checkConfiguration();
+    if (!config.isValid) {
+      setConfigError(config.errors.join(', '));
+    }
+  }, []);
 
   const toggleMode = () => {
     setMode(prev => prev === 'signin' ? 'signup' : 'signin');
@@ -81,9 +92,58 @@ export const AuthPage: React.FC = () => {
           transition={{ duration: 0.8, ease: 'easeOut', delay: 0.2 }}
         >
           <div className="w-full max-w-md">
+            {/* Configuration Error Warning */}
+            {configError && (
+              <motion.div
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mb-6"
+              >
+                <GlassCard className="p-4 bg-red-500/20 border-red-500/30">
+                  <div className="flex items-start space-x-3">
+                    <AlertTriangle className="w-5 h-5 text-red-400 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <h3 className="text-red-400 font-semibold mb-1">
+                        Configuration Error
+                      </h3>
+                      <p className="text-red-300 text-sm">
+                        {configError}
+                      </p>
+                      <p className="text-red-300 text-xs mt-2">
+                        Please check your environment variables and ensure Supabase is properly configured.
+                      </p>
+                    </div>
+                  </div>
+                </GlassCard>
+              </motion.div>
+            )}
+
             <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-3xl p-8 shadow-2xl">
               <AuthForm mode={mode} onToggleMode={toggleMode} />
             </div>
+
+            {/* Development Help */}
+            {import.meta.env.MODE === 'development' && configError && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 }}
+                className="mt-6"
+              >
+                <GlassCard className="p-4 bg-blue-500/20 border-blue-500/30">
+                  <h3 className="text-blue-400 font-semibold mb-2">
+                    Development Setup Help
+                  </h3>
+                  <div className="text-blue-300 text-sm space-y-2">
+                    <p>1. Create a Supabase project at <a href="https://supabase.com" target="_blank" rel="noopener noreferrer" className="underline">supabase.com</a></p>
+                    <p>2. Copy your project URL and anon key from Settings → API</p>
+                    <p>3. Update your .env file with the correct values</p>
+                    <p>4. Configure OAuth providers in Supabase Dashboard → Authentication → Providers</p>
+                    <p>5. Add your domain to the allowed redirect URLs</p>
+                  </div>
+                </GlassCard>
+              </motion.div>
+            )}
           </div>
         </motion.div>
       </div>

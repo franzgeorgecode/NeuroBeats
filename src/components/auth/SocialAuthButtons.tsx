@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Github } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
+import { AuthService } from '../../services/auth';
 
 // Custom Discord icon component
 const DiscordIcon: React.FC<{ className?: string }> = ({ className }) => (
@@ -29,13 +30,22 @@ export const SocialAuthButtons: React.FC<SocialAuthButtonsProps> = ({ isLoading 
   const { signInWithProvider } = useAuth();
   const { showToast } = useToast();
 
+  // Check if Supabase is properly configured
+  React.useEffect(() => {
+    const config = AuthService.checkConfiguration();
+    if (!config.isValid) {
+      console.error('Supabase configuration errors:', config.errors);
+      showToast('Authentication service not properly configured. Please check environment variables.', 'error');
+    }
+  }, [showToast]);
+
   const providers = [
     {
-      name: 'Discord',
-      provider: 'discord' as const,
-      icon: DiscordIcon,
-      color: 'from-indigo-500 to-purple-600',
-      hoverColor: 'hover:from-indigo-600 hover:to-purple-700',
+      name: 'Google',
+      provider: 'google' as const,
+      icon: GoogleIcon,
+      color: 'from-red-500 to-pink-600',
+      hoverColor: 'hover:from-red-600 hover:to-pink-700',
     },
     {
       name: 'GitHub',
@@ -45,27 +55,43 @@ export const SocialAuthButtons: React.FC<SocialAuthButtonsProps> = ({ isLoading 
       hoverColor: 'hover:from-gray-800 hover:to-black',
     },
     {
-      name: 'Google',
-      provider: 'google' as const,
-      icon: GoogleIcon,
-      color: 'from-red-500 to-pink-600',
-      hoverColor: 'hover:from-red-600 hover:to-pink-700',
+      name: 'Discord',
+      provider: 'discord' as const,
+      icon: DiscordIcon,
+      color: 'from-indigo-500 to-purple-600',
+      hoverColor: 'hover:from-indigo-600 hover:to-purple-700',
     },
   ];
 
   const handleProviderAuth = async (provider: 'discord' | 'github' | 'google') => {
     if (isLoading) return;
     
+    // Check configuration before attempting OAuth
+    const config = AuthService.checkConfiguration();
+    if (!config.isValid) {
+      showToast(`Configuration error: ${config.errors.join(', ')}`, 'error');
+      return;
+    }
+    
     try {
       console.log(`Attempting to sign in with ${provider}`);
+      showToast(`Redirecting to ${provider}...`, 'info');
+      
       const result = await signInWithProvider(provider);
       
-      if (!result.success) {
-        showToast(`Failed to sign in with ${provider}: ${result.error?.message}`, 'error');
+      if (!result.success && result.error) {
+        // Handle specific error cases
+        if (result.error.message.includes('Invalid login credentials')) {
+          showToast(`${provider} authentication was cancelled or failed`, 'warning');
+        } else if (result.error.message.includes('DNS_PROBE_FINISHED_NXDOMAIN')) {
+          showToast('Authentication service configuration error. Please contact support.', 'error');
+        } else {
+          showToast(`Failed to sign in with ${provider}: ${result.error.message}`, 'error');
+        }
       }
     } catch (error) {
       console.error(`Error signing in with ${provider}:`, error);
-      showToast(`Error signing in with ${provider}`, 'error');
+      showToast(`Error signing in with ${provider}. Please try again.`, 'error');
     }
   };
 
@@ -108,6 +134,15 @@ export const SocialAuthButtons: React.FC<SocialAuthButtonsProps> = ({ isLoading 
           );
         })}
       </div>
+
+      {/* Configuration Warning */}
+      {!AuthService.checkConfiguration().isValid && (
+        <div className="mt-4 p-3 bg-yellow-500/20 border border-yellow-500/30 rounded-lg">
+          <p className="text-yellow-400 text-sm text-center">
+            ⚠️ Authentication service needs configuration. Please check your environment variables.
+          </p>
+        </div>
+      )}
     </div>
   );
 };
