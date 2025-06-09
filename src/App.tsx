@@ -16,6 +16,7 @@ import { DiscoverPage } from './pages/DiscoverPage';
 import { GenresPage } from './pages/GenresPage';
 import { TrendingPage } from './pages/TrendingPage';
 import { LibraryPage } from './pages/LibraryPage';
+import { AIPlaylistPage } from './pages/AIPlaylistPage';
 import { AuthPage } from './pages/AuthPage';
 import { UserProfile } from './components/auth/UserProfile';
 import { useAppStore } from './stores/appStore';
@@ -69,6 +70,8 @@ function AppContent() {
         return <TrendingPage />;
       case 'library':
         return <LibraryPage />;
+      case 'ai-playlist':
+        return <AIPlaylistPage />;
       case 'liked':
         return <div className="pt-24 pb-32 px-6 text-white">Liked Songs - Coming Soon</div>;
       case 'radio':

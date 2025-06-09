@@ -10,7 +10,8 @@ import {
   Radio,
   TrendingUp,
   User,
-  Compass
+  Compass,
+  Sparkles
 } from 'lucide-react';
 import { useAppStore } from '../../stores/appStore';
 import { useAuth } from '../../hooks/useAuth';
@@ -29,6 +30,10 @@ export const Sidebar: React.FC = () => {
     { id: 'library', label: 'Your Library', icon: Library },
     { id: 'liked', label: 'Liked Songs', icon: Heart },
     { id: 'radio', label: 'Radio', icon: Radio },
+  ];
+
+  const aiMenuItems = [
+    { id: 'ai-playlist', label: 'AI Playlist Generator', icon: Sparkles },
   ];
 
   const userMenuItems = [
@@ -109,6 +114,58 @@ export const Sidebar: React.FC = () => {
               );
             })}
           </nav>
+
+          {/* AI Section */}
+          <div className="border-t border-white/10 pt-4 mb-8">
+            <AnimatePresence>
+              {!sidebarCollapsed && (
+                <motion.h3
+                  className="text-gray-400 text-xs font-semibold uppercase tracking-wider mb-3 px-3"
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -10 }}
+                >
+                  AI Features
+                </motion.h3>
+              )}
+            </AnimatePresence>
+            
+            {aiMenuItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = currentPage === item.id;
+
+              return (
+                <motion.button
+                  key={item.id}
+                  className={`
+                    w-full flex items-center p-3 rounded-xl transition-all duration-200
+                    ${isActive 
+                      ? 'bg-neon-gradient text-white shadow-neon' 
+                      : 'text-gray-300 hover:text-white hover:bg-white/10'
+                    }
+                  `}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => setCurrentPage(item.id)}
+                  style={{ justifyContent: sidebarCollapsed ? 'center' : 'flex-start' }}
+                >
+                  <Icon className="w-6 h-6" />
+                  <AnimatePresence>
+                    {!sidebarCollapsed && (
+                      <motion.span
+                        className="ml-3 font-inter font-medium"
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -10 }}
+                      >
+                        {item.label}
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
+                </motion.button>
+              );
+            })}
+          </div>
 
           {/* User Section */}
           <div className="border-t border-white/10 pt-4 mb-8">
