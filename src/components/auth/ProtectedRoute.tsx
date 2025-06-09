@@ -1,8 +1,8 @@
 import React from 'react';
+import { useAuth } from '@clerk/clerk-react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
-import { useAuth } from '../../hooks/useAuth';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -13,11 +13,11 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   children, 
   requireAuth = true 
 }) => {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isLoaded, isSignedIn } = useAuth();
   const location = useLocation();
 
-  // Show loading only for a brief moment during initial auth check
-  if (isLoading) {
+  // Show loading while Clerk is initializing
+  if (!isLoaded) {
     return (
       <div className="min-h-screen bg-dark-600 flex items-center justify-center">
         <motion.div
@@ -41,11 +41,11 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   }
 
   // Handle authentication redirects
-  if (requireAuth && !isAuthenticated) {
+  if (requireAuth && !isSignedIn) {
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 
-  if (!requireAuth && isAuthenticated) {
+  if (!requireAuth && isSignedIn) {
     const from = location.state?.from?.pathname || '/';
     return <Navigate to={from} replace />;
   }

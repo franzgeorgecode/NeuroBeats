@@ -1,14 +1,25 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Music, Waves, Zap } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
 import { AuthForm } from '../components/auth/AuthForm';
 import { ParticleBackground } from '../components/ui/ParticleBackground';
 
 export const AuthPage: React.FC = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
 
+  useEffect(() => {
+    const modeParam = searchParams.get('mode');
+    if (modeParam === 'signup' || modeParam === 'signin') {
+      setMode(modeParam);
+    }
+  }, [searchParams]);
+
   const toggleMode = () => {
-    setMode(prev => prev === 'signin' ? 'signup' : 'signin');
+    const newMode = mode === 'signin' ? 'signup' : 'signin';
+    setMode(newMode);
+    setSearchParams({ mode: newMode });
   };
 
   return (

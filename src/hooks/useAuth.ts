@@ -1,16 +1,15 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import type { User, Session } from '@supabase/supabase-js';
-import { supabase } from '../services/supabase';
-import { AuthService } from '../services/auth';
+import { useUser, useAuth as useClerkAuth } from '@clerk/clerk-react';
+import { useEffect } from 'react';
 import { useAuthStore } from '../stores/authStore';
 import { useToast } from './useToast';
+import { ProfileService } from '../services/profile';
 
 export const useAuth = () => {
-  const navigate = useNavigate();
+  const { user, isLoaded, isSignedIn } = useUser();
+  const { signOut } = useClerkAuth();
   const { showToast } = useToast();
   const {
-    user,
+    user: storeUser,
     isAuthenticated,
     isLoading,
     setUser,
@@ -19,182 +18,96 @@ export const useAuth = () => {
     logout: logoutStore,
   } = useAuthStore();
 
-  const [session, setSession] = useState<Session | null>(null);
-  const [initialized, setInitialized] = useState(false);
-
   useEffect(() => {
-    let mounted = true;
-
-    const initializeAuth = async () => {
-      if (initialized) return;
-
-      try {
-        setLoading(true);
+    if (isLoaded) {
+      setLoading(false);
+      
+      if (isSignedIn && user) {
+        // Convert Clerk user to our user format
+        const appUser = {
+          id: user.id,
+          email: user.emailAddresses[0]?.emailAddress || '',
+          username: user.username || user.firstName || 'user',
+          avatar_url: user.imageUrl,
+          created_at: user.createdAt?.toISOString() || new Date().toISOString(),
+          updated_at: user.updatedAt?.toISOString() || new Date().toISOString(),
+        };
         
-        // Get initial session
-        const { session } = await AuthService.getSession();
+        setUser(appUser);
+        setAuthenticated(true);
         
-        if (!mounted) return;
-        
-        setSession(session);
-        
-        if (session?.user) {
-          setUser({
-            id: session.user.id,
-            email: session.user.email || '',
-            username: session.user.user_metadata?.username || '',
-            avatar_url: session.user.user_metadata?.avatar_url,
-            created_at: session.user.created_at || '',
-            updated_at: session.user.updated_at || '',
-          });
-          setAuthenticated(true);
-        } else {
-          setUser(null);
-          setAuthenticated(false);
-        }
-      } catch (error) {
-        console.error('Auth initialization error:', error);
-        if (mounted) {
-          setUser(null);
-          setAuthenticated(false);
-        }
-      } finally {
-        if (mounted) {
-          setLoading(false);
-          setInitialized(true);
-        }
+        // Sync with Supabase profile
+        syncUserProfile(appUser);
+      } else {
+        setUser(null);
+        setAuthenticated(false);
       }
-    };
+    } else {
+      setLoading(true);
+    }
+  }, [isLoaded, isSignedIn, user, setUser, setAuthenticated, setLoading]);
 
-    initializeAuth();
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (!mounted) return;
-
-        setSession(session);
+  const syncUserProfile = async (appUser: any) => {
+    try {
+      // Check if profile exists in Supabase
+      const { data: existingProfile } = await ProfileService.getProfile(appUser.id);
+      
+      if (!existingProfile) {
+        // Create profile in Supabase
+        await ProfileService.createProfile({
+          id: appUser.id,
+          email: appUser.email,
+          username: appUser.username,
+          full_name: user?.fullName || '',
+          avatar_url: appUser.avatar_url,
+          bio: '',
+        });
         
-        if (session?.user) {
-          setUser({
-            id: session.user.id,
-            email: session.user.email || '',
-            username: session.user.user_metadata?.username || '',
-            avatar_url: session.user.user_metadata?.avatar_url,
-            created_at: session.user.created_at || '',
-            updated_at: session.user.updated_at || '',
-          });
-          setAuthenticated(true);
-          
-          if (event === 'SIGNED_IN') {
-            showToast('Welcome back!', 'success');
-            navigate('/');
-          }
-        } else {
-          setUser(null);
-          setAuthenticated(false);
-          
-          if (event === 'SIGNED_OUT') {
-            showToast('Signed out successfully', 'success');
-            navigate('/auth');
-          }
-        }
+        // Create default preferences
+        await ProfileService.createUserPreferences({
+          user_id: appUser.id,
+          favorite_genres: [],
+          selected_songs: [],
+          theme_preference: 'dark',
+          notification_settings: {
+            push: true,
+            email: true,
+            marketing: false,
+          },
+          onboarding_completed: false,
+        });
+      } else {
+        // Update existing profile with latest Clerk data
+        await ProfileService.updateProfile(appUser.id, {
+          email: appUser.email,
+          username: appUser.username,
+          avatar_url: appUser.avatar_url,
+          updated_at: new Date().toISOString(),
+        });
       }
-    );
-
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
-    };
-  }, [setUser, setAuthenticated, setLoading, navigate, showToast, initialized]);
-
-  const signUp = async (credentials: {
-    email: string;
-    password: string;
-    username?: string;
-    fullName?: string;
-  }) => {
-    setLoading(true);
-    const { data, error } = await AuthService.signUp(credentials);
-    
-    if (error) {
-      showToast(error.message, 'error');
-      setLoading(false);
-      return { success: false, error };
+    } catch (error) {
+      console.error('Error syncing user profile:', error);
     }
-
-    if (data.user && !data.session) {
-      showToast('Please check your email to verify your account', 'info');
-    }
-
-    setLoading(false);
-    return { success: true, data };
-  };
-
-  const signIn = async (credentials: { email: string; password: string }) => {
-    setLoading(true);
-    const { data, error } = await AuthService.signIn(credentials);
-    
-    if (error) {
-      showToast(error.message, 'error');
-      setLoading(false);
-      return { success: false, error };
-    }
-
-    setLoading(false);
-    return { success: true, data };
-  };
-
-  const signInWithProvider = async (provider: 'discord' | 'github' | 'google') => {
-    setLoading(true);
-    const { data, error } = await AuthService.signInWithProvider(provider);
-    
-    if (error) {
-      showToast(error.message, 'error');
-      setLoading(false);
-      return { success: false, error };
-    }
-
-    setLoading(false);
-    return { success: true, data };
   };
 
   const logout = async () => {
-    setLoading(true);
-    const { error } = await AuthService.signOut();
-    
-    if (error) {
-      showToast(error.message, 'error');
+    try {
+      await signOut();
+      logoutStore();
+      showToast('Signed out successfully', 'success');
+    } catch (error) {
+      console.error('Logout error:', error);
+      showToast('Error signing out', 'error');
     }
-    
-    logoutStore();
-    setLoading(false);
-  };
-
-  const resetPassword = async (email: string) => {
-    setLoading(true);
-    const { error } = await AuthService.resetPassword(email);
-    
-    if (error) {
-      showToast(error.message, 'error');
-      setLoading(false);
-      return { success: false, error };
-    }
-
-    showToast('Password reset email sent', 'success');
-    setLoading(false);
-    return { success: true };
   };
 
   return {
-    user,
-    session,
+    user: storeUser,
     isAuthenticated,
-    isLoading: isLoading && !initialized,
-    signUp,
-    signIn,
-    signInWithProvider,
+    isLoading: isLoading || !isLoaded,
     logout,
-    resetPassword,
+    // Clerk provides built-in auth methods, so we don't need custom ones
+    clerkUser: user,
+    isClerkLoaded: isLoaded,
   };
 };

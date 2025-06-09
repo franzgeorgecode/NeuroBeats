@@ -19,6 +19,7 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
+    "@clerk/clerk-react": "^4.30.0",
     "@sentry/react": "^7.99.0",
     "@sentry/tracing": "^7.99.0",
     "@supabase/supabase-js": "^2.39.0",
