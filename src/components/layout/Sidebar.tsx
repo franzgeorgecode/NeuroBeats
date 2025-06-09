@@ -9,7 +9,8 @@ import {
   Music,
   Radio,
   TrendingUp,
-  User
+  User,
+  Compass
 } from 'lucide-react';
 import { useAppStore } from '../../stores/appStore';
 import { useAuth } from '../../hooks/useAuth';
@@ -21,10 +22,12 @@ export const Sidebar: React.FC = () => {
 
   const menuItems = [
     { id: 'home', label: 'Home', icon: Home },
+    { id: 'discover', label: 'Discover', icon: Compass },
     { id: 'search', label: 'Search', icon: Search },
+    { id: 'genres', label: 'Genres', icon: Music },
+    { id: 'trending', label: 'Trending', icon: TrendingUp },
     { id: 'library', label: 'Your Library', icon: Library },
     { id: 'liked', label: 'Liked Songs', icon: Heart },
-    { id: 'trending', label: 'Trending', icon: TrendingUp },
     { id: 'radio', label: 'Radio', icon: Radio },
   ];
 
@@ -37,7 +40,7 @@ export const Sidebar: React.FC = () => {
   return (
     <AnimatePresence>
       <motion.div
-        className={`fixed left-0 top-0 h-full z-40 ${
+        className={`fixed left-0 top-0 h-full z-40 hidden md:block ${
           sidebarCollapsed ? 'w-20' : 'w-64'
         }`}
         initial={{ x: -100 }}
