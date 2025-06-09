@@ -8,18 +8,32 @@ import { Player } from './components/player/Player';
 import { AuthModal } from './components/auth/AuthModal';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { ToastContainer } from './components/ui/Toast';
+import { OnboardingFlow } from './components/onboarding/OnboardingFlow';
 import { HomePage } from './pages/HomePage';
 import { AuthPage } from './pages/AuthPage';
 import { UserProfile } from './components/auth/UserProfile';
 import { useAppStore } from './stores/appStore';
 import { useAuth } from './hooks/useAuth';
+import { useOnboarding } from './hooks/useOnboarding';
 
 const queryClient = new QueryClient();
 
 function AppContent() {
   const { sidebarCollapsed, currentPage } = useAppStore();
   const { isAuthenticated } = useAuth();
+  const { shouldShowOnboarding, isLoading: onboardingLoading } = useOnboarding();
   const [authModal, setAuthModal] = useState({ isOpen: false, mode: 'signin' as 'signin' | 'signup' });
+
+  // Show onboarding if user needs it
+  if (isAuthenticated && shouldShowOnboarding && !onboardingLoading) {
+    return (
+      <div className="min-h-screen bg-dark-600">
+        <ParticleBackground />
+        <OnboardingFlow />
+        <ToastContainer />
+      </div>
+    );
+  }
 
   const renderCurrentPage = () => {
     switch (currentPage) {

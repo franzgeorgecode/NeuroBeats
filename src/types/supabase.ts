@@ -46,9 +46,10 @@ export interface Database {
           id: string
           user_id: string
           favorite_genres: string[]
-          selected_songs: string[]
+          selected_songs: Json
           theme_preference: string
           notification_settings: Json
+          onboarding_completed: boolean
           created_at: string
           updated_at: string
         }
@@ -56,9 +57,10 @@ export interface Database {
           id?: string
           user_id: string
           favorite_genres?: string[]
-          selected_songs?: string[]
+          selected_songs?: Json
           theme_preference?: string
           notification_settings?: Json
+          onboarding_completed?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -66,9 +68,10 @@ export interface Database {
           id?: string
           user_id?: string
           favorite_genres?: string[]
-          selected_songs?: string[]
+          selected_songs?: Json
           theme_preference?: string
           notification_settings?: Json
+          onboarding_completed?: boolean
           created_at?: string
           updated_at?: string
         }
