@@ -11,22 +11,6 @@ export class ProfileService {
         .eq('id', userId)
         .single();
 
-      if (error && error.code !== 'PGRST116') throw error; // PGRST116 = not found
-      return { data, error: null };
-    } catch (error: any) {
-      return { data: null, error: { message: error.message } };
-    }
-  }
-
-  // Create user profile
-  static async createProfile(profile: Partial<Profile>) {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .insert([profile])
-        .select()
-        .single();
-
       if (error) throw error;
       return { data, error: null };
     } catch (error: any) {
@@ -81,22 +65,6 @@ export class ProfileService {
         .eq('user_id', userId)
         .single();
 
-      if (error && error.code !== 'PGRST116') throw error;
-      return { data, error: null };
-    } catch (error: any) {
-      return { data: null, error: { message: error.message } };
-    }
-  }
-
-  // Create user preferences
-  static async createUserPreferences(preferences: Partial<UserPreferences>) {
-    try {
-      const { data, error } = await supabase
-        .from('user_preferences')
-        .insert([preferences])
-        .select()
-        .single();
-
       if (error) throw error;
       return { data, error: null };
     } catch (error: any) {
@@ -109,11 +77,8 @@ export class ProfileService {
     try {
       const { data, error } = await supabase
         .from('user_preferences')
-        .upsert({
-          user_id: userId,
-          ...preferences,
-          updated_at: new Date().toISOString(),
-        })
+        .update(preferences)
+        .eq('user_id', userId)
         .select()
         .single();
 
@@ -162,7 +127,7 @@ export class ProfileService {
     }
   }
 
-  // Upload avatar (using Supabase storage)
+  // Upload avatar
   static async uploadAvatar(userId: string, file: File) {
     try {
       const fileExt = file.name.split('.').pop();

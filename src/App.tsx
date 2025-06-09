@@ -98,6 +98,18 @@ function AppContent() {
     serviceWorkerManager.register();
   }, []);
 
+  // Don't show loading for too long - if auth is taking too long, show the app anyway
+  useEffect(() => {
+    if (isLoading) {
+      const timeout = setTimeout(() => {
+        // If still loading after 3 seconds, something might be wrong
+        console.warn('Auth loading taking longer than expected');
+      }, 3000);
+      
+      return () => clearTimeout(timeout);
+    }
+  }, [isLoading]);
+
   // Show onboarding if user needs it
   if (isAuthenticated && shouldShowOnboarding && !onboardingLoading) {
     return (

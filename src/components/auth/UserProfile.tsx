@@ -13,21 +13,19 @@ import {
   Music,
   Clock
 } from 'lucide-react';
-import { useUser } from '@clerk/clerk-react';
-import { useUser as useUserData } from '../../hooks/useUser';
+import { useUser } from '../../hooks/useUser';
 import { useAuth } from '../../hooks/useAuth';
 import { GlassCard } from '../ui/GlassCard';
 import { NeonButton } from '../ui/NeonButton';
 
 export const UserProfile: React.FC = () => {
-  const { user: clerkUser } = useUser();
-  const { profile, preferences, updateProfile, uploadAvatar, isLoading } = useUserData();
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
+  const { profile, preferences, updateProfile, uploadAvatar, isLoading } = useUser();
   
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState({
-    username: profile?.username || clerkUser?.username || '',
-    full_name: profile?.full_name || clerkUser?.fullName || '',
+    username: profile?.username || '',
+    full_name: profile?.full_name || '',
     bio: profile?.bio || '',
   });
 
@@ -40,8 +38,8 @@ export const UserProfile: React.FC = () => {
 
   const handleCancel = () => {
     setEditData({
-      username: profile?.username || clerkUser?.username || '',
-      full_name: profile?.full_name || clerkUser?.fullName || '',
+      username: profile?.username || '',
+      full_name: profile?.full_name || '',
       bio: profile?.bio || '',
     });
     setIsEditing(false);
@@ -62,7 +60,7 @@ export const UserProfile: React.FC = () => {
     });
   };
 
-  if (!clerkUser) {
+  if (!profile) {
     return (
       <div className="min-h-screen bg-dark-600 flex items-center justify-center">
         <div className="text-center">
@@ -88,10 +86,10 @@ export const UserProfile: React.FC = () => {
               <div className="relative">
                 <div className="w-32 h-32 rounded-full overflow-hidden bg-neon-gradient p-1">
                   <div className="w-full h-full rounded-full overflow-hidden bg-dark-300 flex items-center justify-center">
-                    {clerkUser.imageUrl ? (
+                    {profile.avatar_url ? (
                       <img
-                        src={clerkUser.imageUrl}
-                        alt={clerkUser.username || 'User'}
+                        src={profile.avatar_url}
+                        alt={profile.username || 'User'}
                         className="w-full h-full object-cover"
                       />
                     ) : (
@@ -165,7 +163,7 @@ export const UserProfile: React.FC = () => {
                     >
                       <div className="flex items-center justify-center md:justify-start space-x-3 mb-2">
                         <h1 className="text-3xl font-space font-bold text-white">
-                          {clerkUser.fullName || clerkUser.username}
+                          {profile.full_name || profile.username}
                         </h1>
                         <motion.button
                           className="p-2 text-gray-400 hover:text-white transition-colors"
@@ -178,10 +176,10 @@ export const UserProfile: React.FC = () => {
                       </div>
                       
                       <p className="text-neon-purple font-inter font-medium mb-2">
-                        @{clerkUser.username}
+                        @{profile.username}
                       </p>
                       
-                      {profile?.bio && (
+                      {profile.bio && (
                         <p className="text-gray-300 font-inter mb-4">
                           {profile.bio}
                         </p>
@@ -190,11 +188,11 @@ export const UserProfile: React.FC = () => {
                       <div className="flex items-center justify-center md:justify-start space-x-6 text-sm text-gray-400">
                         <div className="flex items-center space-x-2">
                           <Mail className="w-4 h-4" />
-                          <span>{clerkUser.emailAddresses[0]?.emailAddress}</span>
+                          <span>{profile.email}</span>
                         </div>
                         <div className="flex items-center space-x-2">
                           <Calendar className="w-4 h-4" />
-                          <span>Joined {formatDate(clerkUser.createdAt?.toISOString() || '')}</span>
+                          <span>Joined {formatDate(profile.created_at)}</span>
                         </div>
                       </div>
                     </motion.div>
