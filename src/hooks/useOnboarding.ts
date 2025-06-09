@@ -1,26 +1,20 @@
 import { useState, useEffect } from 'react';
-import { useUser } from './useUser';
-import { useAuth } from './useAuth';
+import { useUser } from '@clerk/clerk-react';
 
 export const useOnboarding = () => {
-  const { preferences, isLoading: preferencesLoading } = useUser();
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { user, isLoaded } = useUser();
   const [shouldShowOnboarding, setShouldShowOnboarding] = useState(false);
 
   useEffect(() => {
-    if (authLoading || preferencesLoading) return;
+    if (!isLoaded || !user) return;
 
-    if (isAuthenticated) {
-      // Show onboarding if user is authenticated but hasn't completed onboarding
-      const hasCompletedOnboarding = preferences?.onboarding_completed ?? false;
-      setShouldShowOnboarding(!hasCompletedOnboarding);
-    } else {
-      setShouldShowOnboarding(false);
-    }
-  }, [isAuthenticated, preferences, authLoading, preferencesLoading]);
+    // Check if user has completed onboarding
+    const hasCompletedOnboarding = user.publicMetadata?.onboardingCompleted ?? false;
+    setShouldShowOnboarding(!hasCompletedOnboarding);
+  }, [user, isLoaded]);
 
   return {
     shouldShowOnboarding,
-    isLoading: authLoading || preferencesLoading,
+    isLoading: !isLoaded,
   };
 };

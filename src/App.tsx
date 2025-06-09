@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { useAuth } from '@clerk/clerk-react';
 import { ParticleBackground } from './components/ui/ParticleBackground';
 import { Sidebar } from './components/layout/Sidebar';
 import { Header } from './components/layout/Header';
 import { NavigationBar } from './components/layout/NavigationBar';
 import { Player } from './components/player/Player';
-import { AuthModal } from './components/auth/AuthModal';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { ToastContainer } from './components/ui/Toast';
 import { OnboardingFlow } from './components/onboarding/OnboardingFlow';
@@ -24,7 +24,6 @@ import { AIPlaylistPage } from './pages/AIPlaylistPage';
 import { AuthPage } from './pages/AuthPage';
 import { UserProfile } from './components/auth/UserProfile';
 import { useAppStore } from './stores/appStore';
-import { useAuth } from './hooks/useAuth';
 import { useOnboarding } from './hooks/useOnboarding';
 import { useSettingsStore } from './stores/settingsStore';
 import { serviceWorkerManager } from './services/serviceWorker';
@@ -40,11 +39,10 @@ const queryClient = new QueryClient({
 
 function AppContent() {
   const { sidebarCollapsed, currentPage, setCurrentPage, theme } = useAppStore();
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isSignedIn, isLoaded } = useAuth();
   const { shouldShowOnboarding, isLoading: onboardingLoading } = useOnboarding();
   const { accessibility } = useSettingsStore();
   
-  const [authModal, setAuthModal] = useState({ isOpen: false, mode: 'signin' as 'signin' | 'signup' });
   const [shareModal, setShareModal] = useState({ isOpen: false, track: null, playlist: null });
   const [settingsOpen, setSettingsOpen] = useState(false);
 
@@ -98,20 +96,20 @@ function AppContent() {
     serviceWorkerManager.register();
   }, []);
 
-  // Don't show loading for too long - if auth is taking too long, show the app anyway
-  useEffect(() => {
-    if (isLoading) {
-      const timeout = setTimeout(() => {
-        // If still loading after 3 seconds, something might be wrong
-        console.warn('Auth loading taking longer than expected');
-      }, 3000);
-      
-      return () => clearTimeout(timeout);
-    }
-  }, [isLoading]);
+  // Show loading while Clerk is initializing
+  if (!isLoaded) {
+    return (
+      <div className="min-h-screen bg-dark-600 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-neon-gradient rounded-full animate-pulse mx-auto mb-4" />
+          <p className="text-white font-inter">Loading NeuroBeats...</p>
+        </div>
+      </div>
+    );
+  }
 
   // Show onboarding if user needs it
-  if (isAuthenticated && shouldShowOnboarding && !onboardingLoading) {
+  if (isSignedIn && shouldShowOnboarding && !onboardingLoading) {
     return (
       <div className="min-h-screen bg-dark-600">
         <ParticleBackground />
@@ -167,7 +165,7 @@ function AppContent() {
       <ParticleBackground />
       
       <div className="relative z-10">
-        {isAuthenticated && (
+        {isSignedIn && (
           <>
             <Sidebar />
             <Header />
@@ -176,23 +174,13 @@ function AppContent() {
         )}
         
         <main className={`transition-all duration-300 ${
-          isAuthenticated ? (sidebarCollapsed ? 'ml-20' : 'ml-64') : ''
-        } ${isAuthenticated ? 'md:ml-64 md:mr-0' : ''}`}>
+          isSignedIn ? (sidebarCollapsed ? 'ml-20' : 'ml-64') : ''
+        } ${isSignedIn ? 'md:ml-64 md:mr-0' : ''}`}>
           {renderCurrentPage()}
         </main>
         
-        {isAuthenticated && <Player />}
+        {isSignedIn && <Player />}
       </div>
-
-      <AuthModal
-        isOpen={authModal.isOpen}
-        onClose={() => setAuthModal(prev => ({ ...prev, isOpen: false }))}
-        mode={authModal.mode}
-        onToggleMode={() => setAuthModal(prev => ({ 
-          ...prev, 
-          mode: prev.mode === 'signin' ? 'signup' : 'signin' 
-        }))}
-      />
 
       <SocialShare
         isOpen={shareModal.isOpen}
@@ -218,7 +206,7 @@ function App() {
       <Router>
         <Routes>
           <Route 
-            path="/auth" 
+            path="/auth/*" 
             element={
               <ProtectedRoute requireAuth={false}>
                 <AuthPage />

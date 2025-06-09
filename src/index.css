@@ -22,6 +22,107 @@ html {
   scroll-behavior: smooth;
 }
 
+/* Clerk customization */
+.clerk-auth-container .cl-card {
+  background-color: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+.clerk-auth-container .cl-headerTitle {
+  color: white !important;
+  font-family: 'Space Grotesk', sans-serif !important;
+  font-weight: 700 !important;
+  font-size: 1.5rem !important;
+}
+
+.clerk-auth-container .cl-headerSubtitle {
+  color: #9CA3AF !important;
+  font-family: 'Inter', sans-serif !important;
+}
+
+.clerk-auth-container .cl-socialButtonsBlockButton {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  color: white !important;
+  transition: background-color 0.2s !important;
+}
+
+.clerk-auth-container .cl-socialButtonsBlockButton:hover {
+  background-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+.clerk-auth-container .cl-socialButtonsBlockButtonText {
+  color: white !important;
+  font-family: 'Inter', sans-serif !important;
+}
+
+.clerk-auth-container .cl-dividerLine {
+  background-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+.clerk-auth-container .cl-dividerText {
+  color: #9CA3AF !important;
+  font-family: 'Inter', sans-serif !important;
+}
+
+.clerk-auth-container .cl-formFieldLabel {
+  color: white !important;
+  font-family: 'Inter', sans-serif !important;
+  font-weight: 500 !important;
+}
+
+.clerk-auth-container .cl-formFieldInput {
+  background-color: rgba(31, 41, 55, 0.5) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: white !important;
+  border-radius: 0.75rem !important;
+}
+
+.clerk-auth-container .cl-formFieldInput::placeholder {
+  color: #9CA3AF !important;
+}
+
+.clerk-auth-container .cl-formFieldInput:focus {
+  border-color: #8B5CF6 !important;
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.3) !important;
+}
+
+.clerk-auth-container .cl-formButtonPrimary {
+  background: linear-gradient(135deg, #8B5CF6 0%, #3B82F6 50%, #EC4899 100%) !important;
+  color: white !important;
+  font-family: 'Inter', sans-serif !important;
+  font-weight: 500 !important;
+  border-radius: 0.75rem !important;
+  transition: opacity 0.2s !important;
+}
+
+.clerk-auth-container .cl-formButtonPrimary:hover {
+  opacity: 0.9 !important;
+}
+
+.clerk-auth-container .cl-footerActionLink {
+  color: #8B5CF6 !important;
+  font-family: 'Inter', sans-serif !important;
+}
+
+.clerk-auth-container .cl-footerActionLink:hover {
+  color: #3B82F6 !important;
+}
+
+.clerk-auth-container .cl-footerActionText {
+  color: #9CA3AF !important;
+  font-family: 'Inter', sans-serif !important;
+}
+
+.clerk-auth-container .cl-alertText {
+  color: #F87171 !important;
+}
+
+.clerk-auth-container .cl-formFieldErrorText {
+  color: #F87171 !important;
+}
+
 /* Accessibility: Reduce motion */
 .reduce-motion * {
   animation-duration: 0.01ms !important;

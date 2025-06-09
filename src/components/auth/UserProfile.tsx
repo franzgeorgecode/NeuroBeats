@@ -11,45 +11,52 @@ import {
   Settings,
   Heart,
   Music,
-  Clock
+  Clock,
+  LogOut
 } from 'lucide-react';
-import { useUser } from '../../hooks/useUser';
-import { useAuth } from '../../hooks/useAuth';
+import { useUser, useClerk } from '@clerk/clerk-react';
 import { GlassCard } from '../ui/GlassCard';
 import { NeonButton } from '../ui/NeonButton';
+import { useToast } from '../../hooks/useToast';
 
 export const UserProfile: React.FC = () => {
-  const { user, logout } = useAuth();
-  const { profile, preferences, updateProfile, uploadAvatar, isLoading } = useUser();
+  const { user } = useUser();
+  const { signOut } = useClerk();
+  const { showToast } = useToast();
   
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState({
-    username: profile?.username || '',
-    full_name: profile?.full_name || '',
-    bio: profile?.bio || '',
+    firstName: user?.firstName || '',
+    lastName: user?.lastName || '',
+    username: user?.username || '',
   });
 
   const handleSave = async () => {
-    const result = await updateProfile(editData);
-    if (result.success) {
+    try {
+      await user?.update({
+        firstName: editData.firstName,
+        lastName: editData.lastName,
+        username: editData.username,
+      });
       setIsEditing(false);
+      showToast('Profile updated successfully', 'success');
+    } catch (error) {
+      showToast('Failed to update profile', 'error');
     }
   };
 
   const handleCancel = () => {
     setEditData({
-      username: profile?.username || '',
-      full_name: profile?.full_name || '',
-      bio: profile?.bio || '',
+      firstName: user?.firstName || '',
+      lastName: user?.lastName || '',
+      username: user?.username || '',
     });
     setIsEditing(false);
   };
 
-  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      await uploadAvatar(file);
-    }
+  const handleSignOut = () => {
+    signOut();
+    showToast('Signed out successfully', 'success');
   };
 
   const formatDate = (dateString: string) => {
@@ -60,7 +67,7 @@ export const UserProfile: React.FC = () => {
     });
   };
 
-  if (!profile) {
+  if (!user) {
     return (
       <div className="min-h-screen bg-dark-600 flex items-center justify-center">
         <div className="text-center">
@@ -86,10 +93,10 @@ export const UserProfile: React.FC = () => {
               <div className="relative">
                 <div className="w-32 h-32 rounded-full overflow-hidden bg-neon-gradient p-1">
                   <div className="w-full h-full rounded-full overflow-hidden bg-dark-300 flex items-center justify-center">
-                    {profile.avatar_url ? (
+                    {user.imageUrl ? (
                       <img
-                        src={profile.avatar_url}
-                        alt={profile.username || 'User'}
+                        src={user.imageUrl}
+                        alt={user.fullName || 'User'}
                         className="w-full h-full object-cover"
                       />
                     ) : (
@@ -98,19 +105,14 @@ export const UserProfile: React.FC = () => {
                   </div>
                 </div>
                 
-                <motion.label
-                  className="absolute bottom-0 right-0 w-10 h-10 bg-neon-gradient rounded-full flex items-center justify-center cursor-pointer shadow-neon"
+                <motion.button
+                  className="absolute bottom-0 right-0 w-10 h-10 bg-neon-gradient rounded-full flex items-center justify-center shadow-neon"
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
+                  onClick={() => showToast('Avatar upload coming soon!', 'info')}
                 >
                   <Camera className="w-5 h-5 text-white" />
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleAvatarUpload}
-                    className="hidden"
-                  />
-                </motion.label>
+                </motion.button>
               </div>
 
               {/* Profile Info */}
@@ -125,27 +127,27 @@ export const UserProfile: React.FC = () => {
                     >
                       <input
                         type="text"
+                        value={editData.firstName}
+                        onChange={(e) => setEditData(prev => ({ ...prev, firstName: e.target.value }))}
+                        className="w-full px-4 py-2 bg-dark-300 border border-white/10 rounded-xl text-white placeholder-gray-400 focus:border-neon-purple focus:outline-none"
+                        placeholder="First Name"
+                      />
+                      <input
+                        type="text"
+                        value={editData.lastName}
+                        onChange={(e) => setEditData(prev => ({ ...prev, lastName: e.target.value }))}
+                        className="w-full px-4 py-2 bg-dark-300 border border-white/10 rounded-xl text-white placeholder-gray-400 focus:border-neon-purple focus:outline-none"
+                        placeholder="Last Name"
+                      />
+                      <input
+                        type="text"
                         value={editData.username}
                         onChange={(e) => setEditData(prev => ({ ...prev, username: e.target.value }))}
                         className="w-full px-4 py-2 bg-dark-300 border border-white/10 rounded-xl text-white placeholder-gray-400 focus:border-neon-purple focus:outline-none"
                         placeholder="Username"
                       />
-                      <input
-                        type="text"
-                        value={editData.full_name}
-                        onChange={(e) => setEditData(prev => ({ ...prev, full_name: e.target.value }))}
-                        className="w-full px-4 py-2 bg-dark-300 border border-white/10 rounded-xl text-white placeholder-gray-400 focus:border-neon-purple focus:outline-none"
-                        placeholder="Full Name"
-                      />
-                      <textarea
-                        value={editData.bio}
-                        onChange={(e) => setEditData(prev => ({ ...prev, bio: e.target.value }))}
-                        className="w-full px-4 py-2 bg-dark-300 border border-white/10 rounded-xl text-white placeholder-gray-400 focus:border-neon-purple focus:outline-none resize-none"
-                        placeholder="Bio"
-                        rows={3}
-                      />
                       <div className="flex space-x-2">
-                        <NeonButton variant="primary" size="sm" onClick={handleSave} disabled={isLoading}>
+                        <NeonButton variant="primary" size="sm" onClick={handleSave}>
                           <Save className="w-4 h-4 mr-2" />
                           Save
                         </NeonButton>
@@ -163,7 +165,7 @@ export const UserProfile: React.FC = () => {
                     >
                       <div className="flex items-center justify-center md:justify-start space-x-3 mb-2">
                         <h1 className="text-3xl font-space font-bold text-white">
-                          {profile.full_name || profile.username}
+                          {user.fullName || `${user.firstName} ${user.lastName}`.trim() || 'User'}
                         </h1>
                         <motion.button
                           className="p-2 text-gray-400 hover:text-white transition-colors"
@@ -175,24 +177,20 @@ export const UserProfile: React.FC = () => {
                         </motion.button>
                       </div>
                       
-                      <p className="text-neon-purple font-inter font-medium mb-2">
-                        @{profile.username}
-                      </p>
-                      
-                      {profile.bio && (
-                        <p className="text-gray-300 font-inter mb-4">
-                          {profile.bio}
+                      {user.username && (
+                        <p className="text-neon-purple font-inter font-medium mb-2">
+                          @{user.username}
                         </p>
                       )}
                       
                       <div className="flex items-center justify-center md:justify-start space-x-6 text-sm text-gray-400">
                         <div className="flex items-center space-x-2">
                           <Mail className="w-4 h-4" />
-                          <span>{profile.email}</span>
+                          <span>{user.primaryEmailAddress?.emailAddress}</span>
                         </div>
                         <div className="flex items-center space-x-2">
                           <Calendar className="w-4 h-4" />
-                          <span>Joined {formatDate(profile.created_at)}</span>
+                          <span>Joined {formatDate(user.createdAt!)}</span>
                         </div>
                       </div>
                     </motion.div>
@@ -206,7 +204,8 @@ export const UserProfile: React.FC = () => {
                   <Settings className="w-4 h-4 mr-2" />
                   Settings
                 </NeonButton>
-                <NeonButton variant="secondary" size="sm" onClick={logout}>
+                <NeonButton variant="secondary" size="sm" onClick={handleSignOut}>
+                  <LogOut className="w-4 h-4 mr-2" />
                   Sign Out
                 </NeonButton>
               </div>
@@ -240,51 +239,62 @@ export const UserProfile: React.FC = () => {
           ))}
         </motion.div>
 
-        {/* Preferences */}
-        {preferences && (
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.4 }}
-          >
-            <GlassCard className="p-8">
-              <h2 className="text-2xl font-space font-bold text-white mb-6">
-                Music Preferences
-              </h2>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <h3 className="text-lg font-inter font-semibold text-white mb-3">
-                    Favorite Genres
-                  </h3>
-                  <div className="flex flex-wrap gap-2">
-                    {preferences.favorite_genres.length > 0 ? (
-                      preferences.favorite_genres.map((genre) => (
-                        <span
-                          key={genre}
-                          className="px-3 py-1 bg-neon-gradient rounded-full text-white text-sm font-inter"
-                        >
-                          {genre}
+        {/* Account Information */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.4 }}
+        >
+          <GlassCard className="p-8">
+            <h2 className="text-2xl font-space font-bold text-white mb-6">
+              Account Information
+            </h2>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <h3 className="text-lg font-inter font-semibold text-white mb-3">
+                  Email Addresses
+                </h3>
+                <div className="space-y-2">
+                  {user.emailAddresses.map((email) => (
+                    <div
+                      key={email.id}
+                      className="flex items-center justify-between p-3 bg-white/5 rounded-lg"
+                    >
+                      <span className="text-white">{email.emailAddress}</span>
+                      {email.id === user.primaryEmailAddressId && (
+                        <span className="px-2 py-1 bg-neon-gradient rounded-full text-white text-xs">
+                          Primary
                         </span>
-                      ))
-                    ) : (
-                      <p className="text-gray-400 font-inter">No favorite genres selected</p>
-                    )}
-                  </div>
-                </div>
-                
-                <div>
-                  <h3 className="text-lg font-inter font-semibold text-white mb-3">
-                    Theme Preference
-                  </h3>
-                  <span className="px-3 py-1 bg-dark-300 border border-white/10 rounded-full text-white text-sm font-inter">
-                    {preferences.theme_preference}
-                  </span>
+                      )}
+                    </div>
+                  ))}
                 </div>
               </div>
-            </GlassCard>
-          </motion.div>
-        )}
+              
+              <div>
+                <h3 className="text-lg font-inter font-semibold text-white mb-3">
+                  Connected Accounts
+                </h3>
+                <div className="space-y-2">
+                  {user.externalAccounts.length > 0 ? (
+                    user.externalAccounts.map((account) => (
+                      <div
+                        key={account.id}
+                        className="flex items-center justify-between p-3 bg-white/5 rounded-lg"
+                      >
+                        <span className="text-white capitalize">{account.provider}</span>
+                        <span className="text-gray-400 text-sm">{account.emailAddress}</span>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-gray-400 font-inter">No connected accounts</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </GlassCard>
+        </motion.div>
       </div>
     </div>
   );

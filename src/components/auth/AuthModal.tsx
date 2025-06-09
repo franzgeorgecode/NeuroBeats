@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Mail, Lock, User } from 'lucide-react';
+import { X } from 'lucide-react';
+import { SignIn, SignUp } from '@clerk/clerk-react';
 import { GlassCard } from '../ui/GlassCard';
-import { NeonButton } from '../ui/NeonButton';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -17,31 +17,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   mode,
   onToggleMode,
 }) => {
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-    username: '',
-  });
-
-  const [isLoading, setIsLoading] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    // TODO: Implement authentication logic
-    setTimeout(() => {
-      setIsLoading(false);
-      onClose();
-    }, 2000);
-  };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData(prev => ({
-      ...prev,
-      [e.target.name]: e.target.value,
-    }));
-  };
-
   return (
     <AnimatePresence>
       {isOpen && (
@@ -78,57 +53,73 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   </motion.button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  {mode === 'signup' && (
-                    <div className="relative">
-                      <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                      <input
-                        type="text"
-                        name="username"
-                        placeholder="Username"
-                        value={formData.username}
-                        onChange={handleInputChange}
-                        className="w-full pl-12 pr-4 py-3 bg-dark-300 border border-white/10 rounded-xl text-white placeholder-gray-400 focus:border-neon-purple focus:outline-none transition-colors"
-                        required
-                      />
-                    </div>
+                <div className="clerk-auth-container">
+                  {mode === 'signin' ? (
+                    <SignIn 
+                      appearance={{
+                        elements: {
+                          rootBox: "w-full",
+                          card: "bg-transparent shadow-none border-none",
+                          headerTitle: "hidden",
+                          headerSubtitle: "hidden",
+                          socialButtonsBlockButton: "bg-white/10 border border-white/20 text-white hover:bg-white/20 transition-colors",
+                          socialButtonsBlockButtonText: "text-white font-inter",
+                          dividerLine: "bg-white/20",
+                          dividerText: "text-gray-400 font-inter",
+                          formFieldLabel: "text-white font-inter font-medium",
+                          formFieldInput: "bg-dark-300/50 border border-white/10 text-white placeholder-gray-400 focus:border-neon-purple focus:ring-neon-purple/50 rounded-xl",
+                          formButtonPrimary: "bg-neon-gradient hover:opacity-90 text-white font-inter font-medium rounded-xl",
+                          footerActionLink: "text-neon-purple hover:text-neon-blue font-inter",
+                          footerActionText: "text-gray-400 font-inter",
+                          identityPreviewText: "text-white",
+                          identityPreviewEditButton: "text-neon-purple hover:text-neon-blue",
+                          formResendCodeLink: "text-neon-purple hover:text-neon-blue",
+                          otpCodeFieldInput: "bg-dark-300/50 border border-white/10 text-white focus:border-neon-purple rounded-lg",
+                          alertText: "text-red-400",
+                          formFieldErrorText: "text-red-400",
+                        },
+                        layout: {
+                          socialButtonsPlacement: "top",
+                          showOptionalFields: false,
+                        },
+                      }}
+                      redirectUrl="/"
+                      afterSignInUrl="/"
+                    />
+                  ) : (
+                    <SignUp 
+                      appearance={{
+                        elements: {
+                          rootBox: "w-full",
+                          card: "bg-transparent shadow-none border-none",
+                          headerTitle: "hidden",
+                          headerSubtitle: "hidden",
+                          socialButtonsBlockButton: "bg-white/10 border border-white/20 text-white hover:bg-white/20 transition-colors",
+                          socialButtonsBlockButtonText: "text-white font-inter",
+                          dividerLine: "bg-white/20",
+                          dividerText: "text-gray-400 font-inter",
+                          formFieldLabel: "text-white font-inter font-medium",
+                          formFieldInput: "bg-dark-300/50 border border-white/10 text-white placeholder-gray-400 focus:border-neon-purple focus:ring-neon-purple/50 rounded-xl",
+                          formButtonPrimary: "bg-neon-gradient hover:opacity-90 text-white font-inter font-medium rounded-xl",
+                          footerActionLink: "text-neon-purple hover:text-neon-blue font-inter",
+                          footerActionText: "text-gray-400 font-inter",
+                          identityPreviewText: "text-white",
+                          identityPreviewEditButton: "text-neon-purple hover:text-neon-blue",
+                          formResendCodeLink: "text-neon-purple hover:text-neon-blue",
+                          otpCodeFieldInput: "bg-dark-300/50 border border-white/10 text-white focus:border-neon-purple rounded-lg",
+                          alertText: "text-red-400",
+                          formFieldErrorText: "text-red-400",
+                        },
+                        layout: {
+                          socialButtonsPlacement: "top",
+                          showOptionalFields: false,
+                        },
+                      }}
+                      redirectUrl="/"
+                      afterSignUpUrl="/"
+                    />
                   )}
-
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                    <input
-                      type="email"
-                      name="email"
-                      placeholder="Email"
-                      value={formData.email}
-                      onChange={handleInputChange}
-                      className="w-full pl-12 pr-4 py-3 bg-dark-300 border border-white/10 rounded-xl text-white placeholder-gray-400 focus:border-neon-purple focus:outline-none transition-colors"
-                      required
-                    />
-                  </div>
-
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                    <input
-                      type="password"
-                      name="password"
-                      placeholder="Password"
-                      value={formData.password}
-                      onChange={handleInputChange}
-                      className="w-full pl-12 pr-4 py-3 bg-dark-300 border border-white/10 rounded-xl text-white placeholder-gray-400 focus:border-neon-purple focus:outline-none transition-colors"
-                      required
-                    />
-                  </div>
-
-                  <NeonButton
-                    variant="primary"
-                    size="lg"
-                    className="w-full"
-                    disabled={isLoading}
-                  >
-                    {isLoading ? 'Processing...' : mode === 'signin' ? 'Sign In' : 'Sign Up'}
-                  </NeonButton>
-                </form>
+                </div>
 
                 <div className="mt-6 text-center">
                   <p className="text-gray-400">

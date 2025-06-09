@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Check, Sparkles } from 'lucide-react';
+import { useUser } from '@clerk/clerk-react';
 import { WelcomeScreen } from './WelcomeScreen';
 import { GenreSelector } from './GenreSelector';
 import { SongSelector } from './SongSelector';
 import { OnboardingProgress } from './OnboardingProgress';
 import { OnboardingComplete } from './OnboardingComplete';
-import { useUser } from '../../hooks/useUser';
-import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
 import { GlassCard } from '../ui/GlassCard';
 import { NeonButton } from '../ui/NeonButton';
@@ -35,8 +34,7 @@ export const OnboardingFlow: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showSkipConfirmation, setShowSkipConfirmation] = useState(false);
 
-  const { updatePreferences } = useUser();
-  const { user } = useAuth();
+  const { user } = useUser();
   const { showToast } = useToast();
 
   const canProceed = () => {
@@ -68,10 +66,13 @@ export const OnboardingFlow: React.FC = () => {
   const confirmSkip = async () => {
     setIsLoading(true);
     try {
-      await updatePreferences({
-        onboarding_completed: true,
-        favorite_genres: [],
-        selected_songs: [],
+      await user?.update({
+        publicMetadata: {
+          ...user.publicMetadata,
+          onboardingCompleted: true,
+          favoriteGenres: [],
+          selectedSongs: [],
+        }
       });
       showToast('Onboarding skipped. You can update preferences later.', 'info');
     } catch (error) {
@@ -85,10 +86,13 @@ export const OnboardingFlow: React.FC = () => {
   const handleComplete = async () => {
     setIsLoading(true);
     try {
-      await updatePreferences({
-        favorite_genres: selectedGenres,
-        selected_songs: selectedSongs,
-        onboarding_completed: true,
+      await user?.update({
+        publicMetadata: {
+          ...user.publicMetadata,
+          onboardingCompleted: true,
+          favoriteGenres: selectedGenres,
+          selectedSongs: selectedSongs,
+        }
       });
       
       setCurrentStep(3); // Move to complete screen
@@ -165,7 +169,7 @@ export const OnboardingFlow: React.FC = () => {
                 <Sparkles className="w-6 h-6 text-white" />
               </div>
               <h1 className="text-2xl font-space font-bold text-white">
-                NeuroBeats Setup
+                Neuro Beats Setup
               </h1>
             </div>
 

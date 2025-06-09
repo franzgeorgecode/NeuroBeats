@@ -8,16 +8,14 @@ import {
   ChevronLeft,
   ChevronRight
 } from 'lucide-react';
+import { useUser } from '@clerk/clerk-react';
 import { useAppStore } from '../../stores/appStore';
-import { useAuth } from '../../hooks/useAuth';
-import { useUser } from '../../hooks/useUser';
 import { GlassCard } from '../ui/GlassCard';
 import { NeonButton } from '../ui/NeonButton';
 
 export const Header: React.FC = () => {
   const { toggleSidebar, currentPage, setCurrentPage } = useAppStore();
-  const { isAuthenticated, logout } = useAuth();
-  const { profile } = useUser();
+  const { user } = useUser();
 
   const getPageTitle = () => {
     const titles: { [key: string]: string } = {
@@ -75,7 +73,7 @@ export const Header: React.FC = () => {
 
         {/* Right Section */}
         <div className="flex items-center space-x-4">
-          {isAuthenticated ? (
+          {user ? (
             <>
               <motion.button
                 className="p-2 text-white hover:bg-white/10 rounded-xl transition-all duration-200 relative"
@@ -102,10 +100,10 @@ export const Header: React.FC = () => {
                   onClick={() => setCurrentPage('profile')}
                 >
                   <div className="w-8 h-8 bg-neon-gradient rounded-full flex items-center justify-center overflow-hidden">
-                    {profile?.avatar_url ? (
+                    {user.imageUrl ? (
                       <img 
-                        src={profile.avatar_url} 
-                        alt={profile.username || 'User'}
+                        src={user.imageUrl} 
+                        alt={user.fullName || 'User'}
                         className="w-full h-full object-cover"
                       />
                     ) : (
@@ -113,7 +111,7 @@ export const Header: React.FC = () => {
                     )}
                   </div>
                   <span className="text-white font-inter font-medium">
-                    {profile?.username || 'User'}
+                    {user.firstName || user.username || 'User'}
                   </span>
                 </motion.button>
               </div>
