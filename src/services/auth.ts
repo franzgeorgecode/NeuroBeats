@@ -31,6 +31,7 @@ export class AuthService {
       if (error) throw error;
       return { data, error: null };
     } catch (error: any) {
+      console.error('Sign up error:', error);
       return { data: null, error: { message: error.message } };
     }
   }
@@ -45,6 +46,7 @@ export class AuthService {
       if (error) throw error;
       return { data, error: null };
     } catch (error: any) {
+      console.error('Sign in error:', error);
       return { data: null, error: { message: error.message } };
     }
   }
@@ -52,16 +54,23 @@ export class AuthService {
   // OAuth Authentication
   static async signInWithProvider(provider: Provider) {
     try {
+      // Ensure we're using the correct redirect URL
+      const redirectTo = `${window.location.origin}/auth/callback`;
+      console.log(`Redirecting to: ${redirectTo}`);
+      
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo,
+          // Add scopes as needed for each provider
+          scopes: provider === 'github' ? 'user:email' : undefined,
         },
       });
 
       if (error) throw error;
       return { data, error: null };
     } catch (error: any) {
+      console.error(`Sign in with ${provider} error:`, error);
       return { data: null, error: { message: error.message } };
     }
   }
@@ -73,6 +82,7 @@ export class AuthService {
       if (error) throw error;
       return { error: null };
     } catch (error: any) {
+      console.error('Sign out error:', error);
       return { error: { message: error.message } };
     }
   }
@@ -87,6 +97,7 @@ export class AuthService {
       if (error) throw error;
       return { error: null };
     } catch (error: any) {
+      console.error('Reset password error:', error);
       return { error: { message: error.message } };
     }
   }
@@ -98,6 +109,7 @@ export class AuthService {
       if (error) throw error;
       return { error: null };
     } catch (error: any) {
+      console.error('Update password error:', error);
       return { error: { message: error.message } };
     }
   }
@@ -109,6 +121,7 @@ export class AuthService {
       if (error) throw error;
       return { session, error: null };
     } catch (error: any) {
+      console.error('Get session error:', error);
       return { session: null, error: { message: error.message } };
     }
   }
@@ -120,6 +133,7 @@ export class AuthService {
       if (error) throw error;
       return { user, error: null };
     } catch (error: any) {
+      console.error('Get current user error:', error);
       return { user: null, error: { message: error.message } };
     }
   }

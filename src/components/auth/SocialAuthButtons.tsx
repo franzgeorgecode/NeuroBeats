@@ -2,6 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Github } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
+import { useToast } from '../../hooks/useToast';
 
 // Custom Discord icon component
 const DiscordIcon: React.FC<{ className?: string }> = ({ className }) => (
@@ -26,6 +27,7 @@ interface SocialAuthButtonsProps {
 
 export const SocialAuthButtons: React.FC<SocialAuthButtonsProps> = ({ isLoading = false }) => {
   const { signInWithProvider } = useAuth();
+  const { showToast } = useToast();
 
   const providers = [
     {
@@ -53,7 +55,18 @@ export const SocialAuthButtons: React.FC<SocialAuthButtonsProps> = ({ isLoading 
 
   const handleProviderAuth = async (provider: 'discord' | 'github' | 'google') => {
     if (isLoading) return;
-    await signInWithProvider(provider);
+    
+    try {
+      console.log(`Attempting to sign in with ${provider}`);
+      const result = await signInWithProvider(provider);
+      
+      if (!result.success) {
+        showToast(`Failed to sign in with ${provider}: ${result.error?.message}`, 'error');
+      }
+    } catch (error) {
+      console.error(`Error signing in with ${provider}:`, error);
+      showToast(`Error signing in with ${provider}`, 'error');
+    }
   };
 
   return (
@@ -87,6 +100,7 @@ export const SocialAuthButtons: React.FC<SocialAuthButtonsProps> = ({ isLoading 
               whileTap={{ scale: 0.98 }}
               onClick={() => handleProviderAuth(provider.provider)}
               disabled={isLoading}
+              data-testid={`${provider.provider}-auth-button`}
             >
               <Icon className="w-5 h-5 mr-3" />
               Continue with {provider.name}
