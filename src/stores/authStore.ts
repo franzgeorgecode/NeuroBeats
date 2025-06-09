@@ -14,11 +14,11 @@ export const useAuthStore = create<AuthStore>()(
     (set) => ({
       user: null,
       isAuthenticated: false,
-      isLoading: true,
+      isLoading: true, // Start with loading true
       setUser: (user) => set({ user }),
       setAuthenticated: (isAuthenticated) => set({ isAuthenticated }),
       setLoading: (isLoading) => set({ isLoading }),
-      logout: () => set({ user: null, isAuthenticated: false }),
+      logout: () => set({ user: null, isAuthenticated: false, isLoading: false }),
     }),
     {
       name: 'auth-storage',
@@ -26,6 +26,12 @@ export const useAuthStore = create<AuthStore>()(
         user: state.user, 
         isAuthenticated: state.isAuthenticated 
       }),
+      onRehydrateStorage: () => (state) => {
+        // After rehydration, we still need to verify the session
+        if (state) {
+          state.isLoading = true;
+        }
+      },
     }
   )
 );

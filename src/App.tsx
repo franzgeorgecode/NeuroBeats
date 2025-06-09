@@ -29,11 +29,18 @@ import { useOnboarding } from './hooks/useOnboarding';
 import { useSettingsStore } from './stores/settingsStore';
 import { serviceWorkerManager } from './services/serviceWorker';
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      staleTime: 5 * 60 * 1000, // 5 minutes
+    },
+  },
+});
 
 function AppContent() {
   const { sidebarCollapsed, currentPage, setCurrentPage, theme } = useAppStore();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
   const { shouldShowOnboarding, isLoading: onboardingLoading } = useOnboarding();
   const { accessibility } = useSettingsStore();
   
@@ -90,6 +97,18 @@ function AppContent() {
   useEffect(() => {
     serviceWorkerManager.register();
   }, []);
+
+  // Don't show loading for too long - if auth is taking too long, show the app anyway
+  useEffect(() => {
+    if (isLoading) {
+      const timeout = setTimeout(() => {
+        // If still loading after 3 seconds, something might be wrong
+        console.warn('Auth loading taking longer than expected');
+      }, 3000);
+      
+      return () => clearTimeout(timeout);
+    }
+  }, [isLoading]);
 
   // Show onboarding if user needs it
   if (isAuthenticated && shouldShowOnboarding && !onboardingLoading) {

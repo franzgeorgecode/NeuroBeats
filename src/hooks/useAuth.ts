@@ -20,33 +20,59 @@ export const useAuth = () => {
   } = useAuthStore();
 
   const [session, setSession] = useState<Session | null>(null);
+  const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
-    // Get initial session
-    const getInitialSession = async () => {
-      setLoading(true);
-      const { session } = await AuthService.getSession();
-      setSession(session);
-      
-      if (session?.user) {
-        setUser({
-          id: session.user.id,
-          email: session.user.email || '',
-          username: session.user.user_metadata?.username || '',
-          avatar_url: session.user.user_metadata?.avatar_url,
-          created_at: session.user.created_at || '',
-          updated_at: session.user.updated_at || '',
-        });
-        setAuthenticated(true);
+    let mounted = true;
+
+    const initializeAuth = async () => {
+      if (initialized) return;
+
+      try {
+        setLoading(true);
+        
+        // Get initial session
+        const { session } = await AuthService.getSession();
+        
+        if (!mounted) return;
+        
+        setSession(session);
+        
+        if (session?.user) {
+          setUser({
+            id: session.user.id,
+            email: session.user.email || '',
+            username: session.user.user_metadata?.username || '',
+            avatar_url: session.user.user_metadata?.avatar_url,
+            created_at: session.user.created_at || '',
+            updated_at: session.user.updated_at || '',
+          });
+          setAuthenticated(true);
+        } else {
+          setUser(null);
+          setAuthenticated(false);
+        }
+      } catch (error) {
+        console.error('Auth initialization error:', error);
+        if (mounted) {
+          setUser(null);
+          setAuthenticated(false);
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false);
+          setInitialized(true);
+        }
       }
-      setLoading(false);
     };
 
-    getInitialSession();
+    initializeAuth();
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        if (!mounted) return;
+
         setSession(session);
         
         if (session?.user) {
@@ -73,13 +99,14 @@ export const useAuth = () => {
             navigate('/auth');
           }
         }
-        
-        setLoading(false);
       }
     );
 
-    return () => subscription.unsubscribe();
-  }, [setUser, setAuthenticated, setLoading, navigate, showToast]);
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, [setUser, setAuthenticated, setLoading, navigate, showToast, initialized]);
 
   const signUp = async (credentials: {
     email: string;
@@ -163,7 +190,7 @@ export const useAuth = () => {
     user,
     session,
     isAuthenticated,
-    isLoading,
+    isLoading: isLoading && !initialized,
     signUp,
     signIn,
     signInWithProvider,
