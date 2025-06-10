@@ -13,14 +13,15 @@ import {
   ChevronUp,
   ChevronDown,
   List,
-  Maximize2
+  Volume2,
+  VolumeX,
+  Volume1
 } from 'lucide-react';
 import { usePlayerStore } from '../../stores/playerStore';
 import { GlassCard } from '../ui/GlassCard';
 import { AudioVisualizer } from './AudioVisualizer';
-import { VolumeControl } from './VolumeControl';
 import { ProgressBar } from './ProgressBar';
-import { useUser } from '../../hooks/useUser';
+import { useToast } from '../../hooks/useToast';
 
 interface MusicPlayerProps {
   className?: string;
@@ -46,10 +47,11 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({ className = '' }) => {
     toggleRepeat,
   } = usePlayerStore();
 
-  const { addToListeningHistory } = useUser();
+  const { showToast } = useToast();
   const [isExpanded, setIsExpanded] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
   const [showQueue, setShowQueue] = useState(false);
+  const [showVolumeSlider, setShowVolumeSlider] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
   const [currentTime, setCurrentTime] = useState(0);
 
@@ -74,16 +76,12 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({ className = '' }) => {
       } else {
         nextTrack();
       }
-      
-      // Add to listening history
-      if (currentTrack) {
-        addToListeningHistory(currentTrack.id, audio.currentTime, true);
-      }
     };
 
     const handleError = (e: Event) => {
       console.error('Audio playback error:', e);
       setIsPlaying(false);
+      showToast('Error playing audio', 'error');
     };
 
     audio.addEventListener('timeupdate', handleTimeUpdate);
@@ -97,7 +95,7 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({ className = '' }) => {
       audio.removeEventListener('ended', handleEnded);
       audio.removeEventListener('error', handleError);
     };
-  }, [currentTrack, repeat, nextTrack, addToListeningHistory]);
+  }, [currentTrack, repeat, nextTrack, setIsPlaying, setProgress, setDuration, showToast]);
 
   // Play/pause control
   useEffect(() => {
@@ -105,11 +103,15 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({ className = '' }) => {
     if (!audio) return;
 
     if (isPlaying) {
-      audio.play().catch(console.error);
+      audio.play().catch((error) => {
+        console.error('Playback failed:', error);
+        setIsPlaying(false);
+        showToast('Playback failed', 'error');
+      });
     } else {
       audio.pause();
     }
-  }, [isPlaying]);
+  }, [isPlaying, setIsPlaying, showToast]);
 
   // Volume control
   useEffect(() => {
@@ -124,13 +126,18 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({ className = '' }) => {
     const audio = audioRef.current;
     if (!audio || !currentTrack) return;
 
-    audio.src = currentTrack.audio_url;
-    audio.load();
-    
-    if (isPlaying) {
-      audio.play().catch(console.error);
+    if (currentTrack.audio_url) {
+      audio.src = currentTrack.audio_url;
+      audio.load();
+      
+      if (isPlaying) {
+        audio.play().catch((error) => {
+          console.error('Failed to play new track:', error);
+          setIsPlaying(false);
+        });
+      }
     }
-  }, [currentTrack]);
+  }, [currentTrack, isPlaying, setIsPlaying]);
 
   const handleSeek = (time: number) => {
     const audio = audioRef.current;
@@ -142,6 +149,10 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({ className = '' }) => {
   };
 
   const handlePlayPause = () => {
+    if (!currentTrack?.audio_url) {
+      showToast('No audio available for this track', 'warning');
+      return;
+    }
     setIsPlaying(!isPlaying);
   };
 
@@ -159,6 +170,7 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({ className = '' }) => {
       navigator.clipboard.writeText(
         `Check out "${currentTrack.title}" by ${currentTrack.artist} - ${window.location.href}`
       );
+      showToast('Track details copied to clipboard!', 'success');
     }
   };
 
@@ -167,6 +179,14 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({ className = '' }) => {
     const secs = Math.floor(seconds % 60);
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
+
+  const getVolumeIcon = () => {
+    if (volume === 0) return VolumeX;
+    if (volume < 0.5) return Volume1;
+    return Volume2;
+  };
+
+  const VolumeIcon = getVolumeIcon();
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -191,7 +211,7 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({ className = '' }) => {
 
     document.addEventListener('keydown', handleKeyPress);
     return () => document.removeEventListener('keydown', handleKeyPress);
-  }, [isPlaying]);
+  }, [isPlaying, nextTrack, previousTrack]);
 
   if (!currentTrack) return null;
 
@@ -279,6 +299,41 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({ className = '' }) => {
                   >
                     <SkipForward className="w-4 h-4" />
                   </motion.button>
+
+                  {/* Volume Control */}
+                  <div className="relative">
+                    <motion.button
+                      className="p-2 text-gray-400 hover:text-white transition-colors"
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={() => setShowVolumeSlider(!showVolumeSlider)}
+                    >
+                      <VolumeIcon className="w-4 h-4" />
+                    </motion.button>
+                    
+                    <AnimatePresence>
+                      {showVolumeSlider && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: 10 }}
+                          className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2"
+                        >
+                          <div className="bg-dark-300 p-3 rounded-lg shadow-lg">
+                            <input
+                              type="range"
+                              min="0"
+                              max="1"
+                              step="0.01"
+                              value={volume}
+                              onChange={(e) => setVolume(parseFloat(e.target.value))}
+                              className="w-20 h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer slider"
+                            />
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
 
                   <motion.button
                     className="p-2 text-gray-400 hover:text-white transition-colors"
@@ -473,10 +528,39 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({ className = '' }) => {
                       <Share2 className="w-6 h-6" />
                     </motion.button>
 
-                    <VolumeControl
-                      volume={volume}
-                      onVolumeChange={setVolume}
-                    />
+                    <div className="relative">
+                      <motion.button
+                        className="p-3 text-gray-400 hover:text-white transition-colors"
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={() => setShowVolumeSlider(!showVolumeSlider)}
+                      >
+                        <VolumeIcon className="w-6 h-6" />
+                      </motion.button>
+                      
+                      <AnimatePresence>
+                        {showVolumeSlider && (
+                          <motion.div
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: 10 }}
+                            className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2"
+                          >
+                            <div className="bg-dark-300 p-3 rounded-lg shadow-lg">
+                              <input
+                                type="range"
+                                min="0"
+                                max="1"
+                                step="0.01"
+                                value={volume}
+                                onChange={(e) => setVolume(parseFloat(e.target.value))}
+                                className="w-32 h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer slider"
+                              />
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
 
                     <motion.button
                       className="p-3 text-gray-400 hover:text-white transition-colors"

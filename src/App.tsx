@@ -10,7 +10,6 @@ import { Player } from './components/player/Player';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { ToastContainer } from './components/ui/Toast';
 import { OnboardingFlow } from './components/onboarding/OnboardingFlow';
-import { SearchBar } from './components/search/SearchBar';
 import { SocialShare } from './components/social/SocialShare';
 import { SettingsPanel } from './components/settings/SettingsPanel';
 import { InstallPrompt } from './components/pwa/InstallPrompt';
@@ -22,11 +21,11 @@ import { TrendingPage } from './pages/TrendingPage';
 import { LibraryPage } from './pages/LibraryPage';
 import { AIPlaylistPage } from './pages/AIPlaylistPage';
 import { AuthPage } from './pages/AuthPage';
+import { SearchPage } from './pages/SearchPage';
 import { UserProfile } from './components/auth/UserProfile';
 import { useAppStore } from './stores/appStore';
 import { useOnboarding } from './hooks/useOnboarding';
 import { useSettingsStore } from './stores/settingsStore';
-import { serviceWorkerManager } from './services/serviceWorker';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -91,11 +90,6 @@ function AppContent() {
     }
   }, [theme]);
 
-  // Initialize service worker
-  useEffect(() => {
-    serviceWorkerManager.register();
-  }, []);
-
   // Show loading while Clerk is initializing
   if (!isLoaded) {
     return (
@@ -126,21 +120,7 @@ function AppContent() {
       case 'discover':
         return <DiscoverPage />;
       case 'search':
-        return (
-          <div className="min-h-screen bg-gradient-to-br from-dark-500 via-dark-600 to-dark-700 pt-24 pb-32">
-            <div className="container mx-auto px-6">
-              <div className="mb-8">
-                <h1 className="text-4xl font-space font-bold text-white mb-4">
-                  Search Music
-                </h1>
-                <p className="text-xl text-gray-300 mb-8">
-                  Find your favorite songs, artists, and albums
-                </p>
-                <SearchBar className="max-w-2xl" />
-              </div>
-            </div>
-          </div>
-        );
+        return <SearchPage />;
       case 'genres':
         return <GenresPage />;
       case 'trending':

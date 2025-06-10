@@ -1,8 +1,9 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Pause, Check, Loader2, Music } from 'lucide-react';
+import { Play, Pause, Check, Loader2, Music, RefreshCw } from 'lucide-react';
 import { useDeezer } from '../../hooks/useDeezer';
 import { GlassCard } from '../ui/GlassCard';
+import { NeonButton } from '../ui/NeonButton';
 import type { SelectedSong } from './OnboardingFlow';
 
 interface SongSelectorProps {
@@ -11,15 +12,169 @@ interface SongSelectorProps {
   onSongToggle: (song: SelectedSong) => void;
 }
 
+// Mapeo de géneros a IDs de Deezer
+const GENRE_MAPPING: { [key: string]: string } = {
+  'Pop': '132',
+  'Rock': '152', 
+  'Hip Hop': '116',
+  'Electronic': '106',
+  'Classical': '32',
+  'Jazz': '129',
+  'Reggae': '144',
+  'Country': '2',
+  'R&B': '165',
+  'Latin': '197',
+  'Metal': '464',
+  'Indie': '85',
+  'Folk': '466',
+  'Blues': '153',
+  'Soul': '169'
+};
+
 export const SongSelector: React.FC<SongSelectorProps> = ({
   selectedGenres,
   selectedSongs,
   onSongToggle,
 }) => {
   const { useTopTracks, deezerService } = useDeezer();
-  const { data: topTracksData, isLoading, error } = useTopTracks(30);
   const [playingPreview, setPlayingPreview] = useState<string | null>(null);
+  const [genreTracks, setGenreTracks] = useState<any[]>([]);
+  const [isLoadingGenres, setIsLoadingGenres] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
+
+  // Cargar canciones por género
+  useEffect(() => {
+    const loadGenreTracks = async () => {
+      setIsLoadingGenres(true);
+      setError(null);
+      
+      try {
+        const allTracks: any[] = [];
+        
+        // Para cada género seleccionado, obtener las top 3 canciones
+        for (const genre of selectedGenres) {
+          const genreId = GENRE_MAPPING[genre];
+          if (genreId) {
+            try {
+              // Buscar canciones populares del género
+              const searchQuery = `genre:"${genre}"`;
+              const response = await deezerService.searchSongs(searchQuery, 5);
+              
+              if (response.data && response.data.length > 0) {
+                // Tomar las top 3 de este género
+                const topTracks = response.data.slice(0, 3).map(track => ({
+                  ...track,
+                  genre: genre
+                }));
+                allTracks.push(...topTracks);
+              }
+            } catch (genreError) {
+              console.warn(`Error loading tracks for genre ${genre}:`, genreError);
+            }
+          }
+        }
+
+        // Si no hay suficientes canciones, agregar algunas populares generales
+        if (allTracks.length < 15) {
+          try {
+            const { data: topTracksData } = await deezerService.getTopTracks(20);
+            if (topTracksData?.data) {
+              const additionalTracks = topTracksData.data
+                .slice(0, 15 - allTracks.length)
+                .map(track => ({ ...track, genre: 'Popular' }));
+              allTracks.push(...additionalTracks);
+            }
+          } catch (topTracksError) {
+            console.warn('Error loading top tracks:', topTracksError);
+          }
+        }
+
+        setGenreTracks(allTracks);
+      } catch (err) {
+        console.error('Error loading genre tracks:', err);
+        setError('Unable to load songs. Please try again.');
+        
+        // Usar canciones de respaldo
+        setGenreTracks(getFallbackSongs());
+      } finally {
+        setIsLoadingGenres(false);
+      }
+    };
+
+    if (selectedGenres.length > 0) {
+      loadGenreTracks();
+    } else {
+      setIsLoadingGenres(false);
+      setGenreTracks(getFallbackSongs());
+    }
+  }, [selectedGenres, deezerService]);
+
+  const getFallbackSongs = () => [
+    {
+      id: 'fallback-1',
+      title: 'Blinding Lights',
+      artist: { name: 'The Weeknd' },
+      album: { cover_medium: 'https://images.pexels.com/photos/1763075/pexels-photo-1763075.jpeg' },
+      duration: 200,
+      preview: '',
+      genre: 'Pop'
+    },
+    {
+      id: 'fallback-2', 
+      title: 'Watermelon Sugar',
+      artist: { name: 'Harry Styles' },
+      album: { cover_medium: 'https://images.pexels.com/photos/1644888/pexels-photo-1644888.jpeg' },
+      duration: 174,
+      preview: '',
+      genre: 'Pop'
+    },
+    {
+      id: 'fallback-3',
+      title: 'Good 4 U', 
+      artist: { name: 'Olivia Rodrigo' },
+      album: { cover_medium: 'https://images.pexels.com/photos/1540406/pexels-photo-1540406.jpeg' },
+      duration: 178,
+      preview: '',
+      genre: 'Pop'
+    },
+    {
+      id: 'fallback-4',
+      title: 'Levitating',
+      artist: { name: 'Dua Lipa' },
+      album: { cover_medium: 'https://images.pexels.com/photos/1389429/pexels-photo-1389429.jpeg' },
+      duration: 203,
+      preview: '',
+      genre: 'Pop'
+    },
+    {
+      id: 'fallback-5',
+      title: 'Stay',
+      artist: { name: 'The Kid LAROI & Justin Bieber' },
+      album: { cover_medium: 'https://images.pexels.com/photos/1190297/pexels-photo-1190297.jpeg' },
+      duration: 141,
+      preview: '',
+      genre: 'Pop'
+    },
+    {
+      id: 'fallback-6',
+      title: 'Heat Waves',
+      artist: { name: 'Glass Animals' },
+      album: { cover_medium: 'https://images.pexels.com/photos/1105666/pexels-photo-1105666.jpeg' },
+      duration: 238,
+      preview: '',
+      genre: 'Indie'
+    },
+    {
+      id: 'fallback-7',
+      title: 'As It Was',
+      artist: { name: 'Harry Styles' },
+      album: { cover_medium: 'https://images.pexels.com/photos/1407322/pexels-photo-1407322.jpeg' },
+      duration: 167,
+      preview: '',
+      genre: 'Pop'
+    }
+  ];
 
   const handlePreviewPlay = (song: SelectedSong) => {
     if (!audioRef.current || !song.preview_url) return;
@@ -32,7 +187,6 @@ export const SongSelector: React.FC<SongSelectorProps> = ({
         audioRef.current.src = song.preview_url;
         audioRef.current.play().catch((error) => {
           console.warn('Audio playback failed:', error);
-          // Don't show error to user, just fail silently
         });
         setPlayingPreview(song.id);
       }
@@ -52,7 +206,7 @@ export const SongSelector: React.FC<SongSelectorProps> = ({
       title: deezerTrack.title,
       artist: deezerTrack.artist.name,
       preview_url: deezerTrack.preview || '',
-      cover_url: deezerTrack.album?.cover_medium || deezerTrack.album?.cover_big,
+      cover_url: deezerTrack.album?.cover_medium || deezerTrack.album?.cover_big || 'https://images.pexels.com/photos/1763075/pexels-photo-1763075.jpeg',
       duration: deezerTrack.duration,
     };
   };
@@ -63,7 +217,13 @@ export const SongSelector: React.FC<SongSelectorProps> = ({
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Show error state if API fails
+  const handleRetry = () => {
+    setError(null);
+    setIsLoadingGenres(true);
+    // Trigger reload by updating a state that useEffect depends on
+    window.location.reload();
+  };
+
   if (error) {
     return (
       <div className="text-center">
@@ -85,18 +245,24 @@ export const SongSelector: React.FC<SongSelectorProps> = ({
           <h3 className="text-xl font-semibold text-white mb-2">
             Unable to load songs
           </h3>
-          <p className="text-gray-400 mb-4">
-            We're having trouble connecting to the music service. You can skip this step for now.
+          <p className="text-gray-400 mb-6">
+            {error}
           </p>
-          <p className="text-sm text-gray-500">
-            You can always add your favorite songs later in your profile settings.
-          </p>
+          <div className="space-y-4">
+            <NeonButton variant="primary" onClick={handleRetry}>
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Try Again
+            </NeonButton>
+            <p className="text-sm text-gray-500">
+              Or continue with our curated selection below
+            </p>
+          </div>
         </GlassCard>
       </div>
     );
   }
 
-  if (isLoading) {
+  if (isLoadingGenres) {
     return (
       <div className="text-center">
         <motion.div
@@ -118,78 +284,6 @@ export const SongSelector: React.FC<SongSelectorProps> = ({
       </div>
     );
   }
-
-  // Use fallback songs if no data available
-  const fallbackSongs = [
-    {
-      id: 'fallback-1',
-      title: 'Blinding Lights',
-      artist: 'The Weeknd',
-      preview_url: '',
-      cover_url: 'https://images.pexels.com/photos/1763075/pexels-photo-1763075.jpeg',
-      duration: 200,
-    },
-    {
-      id: 'fallback-2',
-      title: 'Watermelon Sugar',
-      artist: 'Harry Styles',
-      preview_url: '',
-      cover_url: 'https://images.pexels.com/photos/1644888/pexels-photo-1644888.jpeg',
-      duration: 174,
-    },
-    {
-      id: 'fallback-3',
-      title: 'Good 4 U',
-      artist: 'Olivia Rodrigo',
-      preview_url: '',
-      cover_url: 'https://images.pexels.com/photos/1540406/pexels-photo-1540406.jpeg',
-      duration: 178,
-    },
-    {
-      id: 'fallback-4',
-      title: 'Levitating',
-      artist: 'Dua Lipa',
-      preview_url: '',
-      cover_url: 'https://images.pexels.com/photos/1389429/pexels-photo-1389429.jpeg',
-      duration: 203,
-    },
-    {
-      id: 'fallback-5',
-      title: 'Stay',
-      artist: 'The Kid LAROI & Justin Bieber',
-      preview_url: '',
-      cover_url: 'https://images.pexels.com/photos/1190297/pexels-photo-1190297.jpeg',
-      duration: 141,
-    },
-    {
-      id: 'fallback-6',
-      title: 'Heat Waves',
-      artist: 'Glass Animals',
-      preview_url: '',
-      cover_url: 'https://images.pexels.com/photos/1105666/pexels-photo-1105666.jpeg',
-      duration: 238,
-    },
-    {
-      id: 'fallback-7',
-      title: 'As It Was',
-      artist: 'Harry Styles',
-      preview_url: '',
-      cover_url: 'https://images.pexels.com/photos/1407322/pexels-photo-1407322.jpeg',
-      duration: 167,
-    },
-    {
-      id: 'fallback-8',
-      title: 'Anti-Hero',
-      artist: 'Taylor Swift',
-      preview_url: '',
-      cover_url: 'https://images.pexels.com/photos/164821/pexels-photo-164821.jpeg',
-      duration: 200,
-    },
-  ];
-
-  const songsToShow = topTracksData?.data?.length > 0 
-    ? topTracksData.data.slice(0, 24).map(convertDeezerToSelectedSong)
-    : fallbackSongs;
 
   return (
     <div className="text-center">
@@ -215,7 +309,7 @@ export const SongSelector: React.FC<SongSelectorProps> = ({
           {selectedSongs.length}/5 songs selected
         </p>
         <p className="text-sm text-gray-400 mt-2">
-          Click on songs to add them to your profile
+          Based on your selected genres: {selectedGenres.join(', ')}
         </p>
       </motion.div>
 
@@ -225,7 +319,8 @@ export const SongSelector: React.FC<SongSelectorProps> = ({
         transition={{ duration: 0.6, delay: 0.2 }}
         className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto"
       >
-        {songsToShow.map((song, index) => {
+        {genreTracks.map((track, index) => {
+          const song = convertDeezerToSelectedSong(track);
           const isSelected = selectedSongs.some(s => s.id === song.id);
           const isPlaying = playingPreview === song.id;
           const canSelect = selectedSongs.length < 5 || isSelected;
@@ -315,9 +410,16 @@ export const SongSelector: React.FC<SongSelectorProps> = ({
                     <p className="text-gray-400 text-xs truncate">
                       {song.artist}
                     </p>
-                    <p className="text-gray-500 text-xs">
-                      {formatDuration(song.duration)}
-                    </p>
+                    <div className="flex items-center justify-between mt-1">
+                      <p className="text-gray-500 text-xs">
+                        {formatDuration(song.duration)}
+                      </p>
+                      {track.genre && (
+                        <span className="text-xs bg-neon-purple/20 text-neon-purple px-2 py-1 rounded-full">
+                          {track.genre}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
 
