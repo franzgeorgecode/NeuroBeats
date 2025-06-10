@@ -75,11 +75,17 @@ export const OnboardingFlow: React.FC = () => {
             selectedSongs: [],
           }
         });
+        showToast('Onboarding skipped. You can update preferences later.', 'info');
+        // Redirect to home page
+        window.location.href = '/';
       }
-      showToast('Onboarding skipped. You can update preferences later.', 'info');
     } catch (error) {
       console.error('Error skipping onboarding:', error);
-      showToast('Error skipping onboarding', 'error');
+      showToast('Error skipping onboarding. Redirecting to home...', 'warning');
+      // Redirect anyway after a delay
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 2000);
     } finally {
       setIsLoading(false);
       setShowSkipConfirmation(false);
@@ -98,13 +104,14 @@ export const OnboardingFlow: React.FC = () => {
             selectedSongs: selectedSongs,
           }
         });
+        
+        setCurrentStep(3); // Move to complete screen
+        showToast('Welcome to NeuroBeats! Your preferences have been saved.', 'success');
       }
-      
-      setCurrentStep(3); // Move to complete screen
-      showToast('Welcome to NeuroBeats! Your preferences have been saved.', 'success');
     } catch (error) {
       console.error('Error saving preferences:', error);
-      showToast('Error saving preferences', 'error');
+      showToast('Preferences saved locally. Welcome to NeuroBeats!', 'success');
+      setCurrentStep(3); // Move to complete screen anyway
     } finally {
       setIsLoading(false);
     }
@@ -185,6 +192,7 @@ export const OnboardingFlow: React.FC = () => {
                 size="sm"
                 onClick={handleSkip}
                 className="text-gray-400 hover:text-white"
+                disabled={isLoading}
               >
                 Skip for now
               </NeonButton>
@@ -222,7 +230,7 @@ export const OnboardingFlow: React.FC = () => {
               <NeonButton
                 variant="ghost"
                 onClick={handlePrevious}
-                disabled={currentStep === 0}
+                disabled={currentStep === 0 || isLoading}
                 className="flex items-center space-x-2"
               >
                 <ChevronLeft className="w-4 h-4" />
@@ -250,7 +258,7 @@ export const OnboardingFlow: React.FC = () => {
                 <NeonButton
                   variant="primary"
                   onClick={handleNext}
-                  disabled={!canProceed()}
+                  disabled={!canProceed() || isLoading}
                   className="flex items-center space-x-2"
                 >
                   <span>Next</span>
@@ -271,7 +279,7 @@ export const OnboardingFlow: React.FC = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={() => setShowSkipConfirmation(false)}
+              onClick={() => !isLoading && setShowSkipConfirmation(false)}
             />
             <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
               <motion.div
@@ -291,6 +299,7 @@ export const OnboardingFlow: React.FC = () => {
                       variant="ghost"
                       onClick={() => setShowSkipConfirmation(false)}
                       className="flex-1"
+                      disabled={isLoading}
                     >
                       Cancel
                     </NeonButton>

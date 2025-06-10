@@ -1,7 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Pause, Check, Loader2, Music } from 'lucide-react';
-import { useDeezer } from '../../hooks/useDeezer';
+import { Play, Pause, Check, Music } from 'lucide-react';
 import { GlassCard } from '../ui/GlassCard';
 import type { SelectedSong } from './OnboardingFlow';
 
@@ -16,46 +15,204 @@ export const SongSelector: React.FC<SongSelectorProps> = ({
   selectedSongs,
   onSongToggle,
 }) => {
-  const { useTopTracks, deezerService } = useDeezer();
-  const { data: topTracksData, isLoading, error } = useTopTracks(30);
   const [playingPreview, setPlayingPreview] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
 
-  const handlePreviewPlay = (song: SelectedSong) => {
-    if (!audioRef.current || !song.preview_url) return;
-
-    try {
-      if (playingPreview === song.id) {
-        audioRef.current.pause();
-        setPlayingPreview(null);
-      } else {
-        audioRef.current.src = song.preview_url;
-        audioRef.current.play().catch((error) => {
-          console.warn('Audio playback failed:', error);
-          // Don't show error to user, just fail silently
-        });
-        setPlayingPreview(song.id);
-      }
-    } catch (error) {
-      console.warn('Audio preview error:', error);
-      setPlayingPreview(null);
+  // Canciones populares predefinidas para evitar dependencia de API externa
+  const popularSongs: SelectedSong[] = [
+    {
+      id: 'song-1',
+      title: 'Blinding Lights',
+      artist: 'The Weeknd',
+      preview_url: '',
+      cover_url: 'https://images.pexels.com/photos/1763075/pexels-photo-1763075.jpeg?auto=compress&cs=tinysrgb&w=400',
+      duration: 200,
+    },
+    {
+      id: 'song-2',
+      title: 'Watermelon Sugar',
+      artist: 'Harry Styles',
+      preview_url: '',
+      cover_url: 'https://images.pexels.com/photos/1644888/pexels-photo-1644888.jpeg?auto=compress&cs=tinysrgb&w=400',
+      duration: 174,
+    },
+    {
+      id: 'song-3',
+      title: 'Good 4 U',
+      artist: 'Olivia Rodrigo',
+      preview_url: '',
+      cover_url: 'https://images.pexels.com/photos/1540406/pexels-photo-1540406.jpeg?auto=compress&cs=tinysrgb&w=400',
+      duration: 178,
+    },
+    {
+      id: 'song-4',
+      title: 'Levitating',
+      artist: 'Dua Lipa',
+      preview_url: '',
+      cover_url: 'https://images.pexels.com/photos/1389429/pexels-photo-1389429.jpeg?auto=compress&cs=tinysrgb&w=400',
+      duration: 203,
+    },
+    {
+      id: 'song-5',
+      title: 'Stay',
+      artist: 'The Kid LAROI & Justin Bieber',
+      preview_url: '',
+      cover_url: 'https://images.pexels.com/photos/1190297/pexels-photo-1190297.jpeg?auto=compress&cs=tinysrgb&w=400',
+      duration: 141,
+    },
+    {
+      id: 'song-6',
+      title: 'Heat Waves',
+      artist: 'Glass Animals',
+      preview_url: '',
+      cover_url: 'https://images.pexels.com/photos/1105666/pexels-photo-1105666.jpeg?auto=compress&cs=tinysrgb&w=400',
+      duration: 238,
+    },
+    {
+      id: 'song-7',
+      title: 'As It Was',
+      artist: 'Harry Styles',
+      preview_url: '',
+      cover_url: 'https://images.pexels.com/photos/1407322/pexels-photo-1407322.jpeg?auto=compress&cs=tinysrgb&w=400',
+      duration: 167,
+    },
+    {
+      id: 'song-8',
+      title: 'Anti-Hero',
+      artist: 'Taylor Swift',
+      preview_url: '',
+      cover_url: 'https://images.pexels.com/photos/164821/pexels-photo-164821.jpeg?auto=compress&cs=tinysrgb&w=400',
+      duration: 200,
+    },
+    {
+      id: 'song-9',
+      title: 'Flowers',
+      artist: 'Miley Cyrus',
+      preview_url: '',
+      cover_url: 'https://images.pexels.com/photos/1190298/pexels-photo-1190298.jpeg?auto=compress&cs=tinysrgb&w=400',
+      duration: 200,
+    },
+    {
+      id: 'song-10',
+      title: 'Unholy',
+      artist: 'Sam Smith ft. Kim Petras',
+      preview_url: '',
+      cover_url: 'https://images.pexels.com/photos/1644888/pexels-photo-1644888.jpeg?auto=compress&cs=tinysrgb&w=400',
+      duration: 156,
+    },
+    {
+      id: 'song-11',
+      title: 'Bad Habit',
+      artist: 'Steve Lacy',
+      preview_url: '',
+      cover_url: 'https://images.pexels.com/photos/1763075/pexels-photo-1763075.jpeg?auto=compress&cs=tinysrgb&w=400',
+      duration: 221,
+    },
+    {
+      id: 'song-12',
+      title: 'About Damn Time',
+      artist: 'Lizzo',
+      preview_url: '',
+      cover_url: 'https://images.pexels.com/photos/1540406/pexels-photo-1540406.jpeg?auto=compress&cs=tinysrgb&w=400',
+      duration: 193,
+    },
+    {
+      id: 'song-13',
+      title: 'Running Up That Hill',
+      artist: 'Kate Bush',
+      preview_url: '',
+      cover_url: 'https://images.pexels.com/photos/1389429/pexels-photo-1389429.jpeg?auto=compress&cs=tinysrgb&w=400',
+      duration: 300,
+    },
+    {
+      id: 'song-14',
+      title: 'Shivers',
+      artist: 'Ed Sheeran',
+      preview_url: '',
+      cover_url: 'https://images.pexels.com/photos/1190297/pexels-photo-1190297.jpeg?auto=compress&cs=tinysrgb&w=400',
+      duration: 207,
+    },
+    {
+      id: 'song-15',
+      title: 'Industry Baby',
+      artist: 'Lil Nas X & Jack Harlow',
+      preview_url: '',
+      cover_url: 'https://images.pexels.com/photos/1105666/pexels-photo-1105666.jpeg?auto=compress&cs=tinysrgb&w=400',
+      duration: 212,
+    },
+    {
+      id: 'song-16',
+      title: 'Ghost',
+      artist: 'Justice',
+      preview_url: '',
+      cover_url: 'https://images.pexels.com/photos/1407322/pexels-photo-1407322.jpeg?auto=compress&cs=tinysrgb&w=400',
+      duration: 189,
+    },
+    {
+      id: 'song-17',
+      title: 'Peaches',
+      artist: 'Justin Bieber ft. Daniel Caesar & Giveon',
+      preview_url: '',
+      cover_url: 'https://images.pexels.com/photos/164821/pexels-photo-164821.jpeg?auto=compress&cs=tinysrgb&w=400',
+      duration: 198,
+    },
+    {
+      id: 'song-18',
+      title: 'Deja Vu',
+      artist: 'Olivia Rodrigo',
+      preview_url: '',
+      cover_url: 'https://images.pexels.com/photos/1190298/pexels-photo-1190298.jpeg?auto=compress&cs=tinysrgb&w=400',
+      duration: 215,
+    },
+    {
+      id: 'song-19',
+      title: 'Montero (Call Me By Your Name)',
+      artist: 'Lil Nas X',
+      preview_url: '',
+      cover_url: 'https://images.pexels.com/photos/1644888/pexels-photo-1644888.jpeg?auto=compress&cs=tinysrgb&w=400',
+      duration: 137,
+    },
+    {
+      id: 'song-20',
+      title: 'Positions',
+      artist: 'Ariana Grande',
+      preview_url: '',
+      cover_url: 'https://images.pexels.com/photos/1763075/pexels-photo-1763075.jpeg?auto=compress&cs=tinysrgb&w=400',
+      duration: 172,
+    },
+    {
+      id: 'song-21',
+      title: 'Drivers License',
+      artist: 'Olivia Rodrigo',
+      preview_url: '',
+      cover_url: 'https://images.pexels.com/photos/1540406/pexels-photo-1540406.jpeg?auto=compress&cs=tinysrgb&w=400',
+      duration: 242,
+    },
+    {
+      id: 'song-22',
+      title: 'Mood',
+      artist: '24kGoldn ft. iann dior',
+      preview_url: '',
+      cover_url: 'https://images.pexels.com/photos/1389429/pexels-photo-1389429.jpeg?auto=compress&cs=tinysrgb&w=400',
+      duration: 140,
+    },
+    {
+      id: 'song-23',
+      title: 'Dynamite',
+      artist: 'BTS',
+      preview_url: '',
+      cover_url: 'https://images.pexels.com/photos/1190297/pexels-photo-1190297.jpeg?auto=compress&cs=tinysrgb&w=400',
+      duration: 199,
+    },
+    {
+      id: 'song-24',
+      title: 'Savage',
+      artist: 'Megan Thee Stallion',
+      preview_url: '',
+      cover_url: 'https://images.pexels.com/photos/1105666/pexels-photo-1105666.jpeg?auto=compress&cs=tinysrgb&w=400',
+      duration: 184,
     }
-  };
-
-  const handleAudioEnded = () => {
-    setPlayingPreview(null);
-  };
-
-  const convertDeezerToSelectedSong = (deezerTrack: any): SelectedSong => {
-    return {
-      id: deezerTrack.id,
-      title: deezerTrack.title,
-      artist: deezerTrack.artist.name,
-      preview_url: deezerTrack.preview || '',
-      cover_url: deezerTrack.album?.cover_medium || deezerTrack.album?.cover_big,
-      duration: deezerTrack.duration,
-    };
-  };
+  ];
 
   const formatDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -63,142 +220,8 @@ export const SongSelector: React.FC<SongSelectorProps> = ({
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Show error state if API fails
-  if (error) {
-    return (
-      <div className="text-center">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
-        >
-          <h2 className="text-4xl font-space font-bold text-white mb-4">
-            Choose Your Favorite Songs
-          </h2>
-          <p className="text-xl text-gray-300 mb-2">
-            Select exactly 5 songs to complete your music profile
-          </p>
-        </motion.div>
-
-        <GlassCard className="p-8 text-center">
-          <Music className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-white mb-2">
-            Unable to load songs
-          </h3>
-          <p className="text-gray-400 mb-4">
-            We're having trouble connecting to the music service. You can skip this step for now.
-          </p>
-          <p className="text-sm text-gray-500">
-            You can always add your favorite songs later in your profile settings.
-          </p>
-        </GlassCard>
-      </div>
-    );
-  }
-
-  if (isLoading) {
-    return (
-      <div className="text-center">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
-        >
-          <h2 className="text-4xl font-space font-bold text-white mb-4">
-            Loading Your Personalized Songs
-          </h2>
-          <p className="text-xl text-gray-300">
-            Finding the perfect tracks based on your genre preferences...
-          </p>
-        </motion.div>
-
-        <div className="flex items-center justify-center">
-          <Loader2 className="w-8 h-8 text-neon-purple animate-spin" />
-        </div>
-      </div>
-    );
-  }
-
-  // Use fallback songs if no data available
-  const fallbackSongs = [
-    {
-      id: 'fallback-1',
-      title: 'Blinding Lights',
-      artist: 'The Weeknd',
-      preview_url: '',
-      cover_url: 'https://images.pexels.com/photos/1763075/pexels-photo-1763075.jpeg',
-      duration: 200,
-    },
-    {
-      id: 'fallback-2',
-      title: 'Watermelon Sugar',
-      artist: 'Harry Styles',
-      preview_url: '',
-      cover_url: 'https://images.pexels.com/photos/1644888/pexels-photo-1644888.jpeg',
-      duration: 174,
-    },
-    {
-      id: 'fallback-3',
-      title: 'Good 4 U',
-      artist: 'Olivia Rodrigo',
-      preview_url: '',
-      cover_url: 'https://images.pexels.com/photos/1540406/pexels-photo-1540406.jpeg',
-      duration: 178,
-    },
-    {
-      id: 'fallback-4',
-      title: 'Levitating',
-      artist: 'Dua Lipa',
-      preview_url: '',
-      cover_url: 'https://images.pexels.com/photos/1389429/pexels-photo-1389429.jpeg',
-      duration: 203,
-    },
-    {
-      id: 'fallback-5',
-      title: 'Stay',
-      artist: 'The Kid LAROI & Justin Bieber',
-      preview_url: '',
-      cover_url: 'https://images.pexels.com/photos/1190297/pexels-photo-1190297.jpeg',
-      duration: 141,
-    },
-    {
-      id: 'fallback-6',
-      title: 'Heat Waves',
-      artist: 'Glass Animals',
-      preview_url: '',
-      cover_url: 'https://images.pexels.com/photos/1105666/pexels-photo-1105666.jpeg',
-      duration: 238,
-    },
-    {
-      id: 'fallback-7',
-      title: 'As It Was',
-      artist: 'Harry Styles',
-      preview_url: '',
-      cover_url: 'https://images.pexels.com/photos/1407322/pexels-photo-1407322.jpeg',
-      duration: 167,
-    },
-    {
-      id: 'fallback-8',
-      title: 'Anti-Hero',
-      artist: 'Taylor Swift',
-      preview_url: '',
-      cover_url: 'https://images.pexels.com/photos/164821/pexels-photo-164821.jpeg',
-      duration: 200,
-    },
-  ];
-
-  const songsToShow = topTracksData?.data?.length > 0 
-    ? topTracksData.data.slice(0, 24).map(convertDeezerToSelectedSong)
-    : fallbackSongs;
-
   return (
     <div className="text-center">
-      <audio
-        ref={audioRef}
-        onEnded={handleAudioEnded}
-        onError={() => setPlayingPreview(null)}
-      />
-
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -225,9 +248,8 @@ export const SongSelector: React.FC<SongSelectorProps> = ({
         transition={{ duration: 0.6, delay: 0.2 }}
         className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto"
       >
-        {songsToShow.map((song, index) => {
+        {popularSongs.map((song, index) => {
           const isSelected = selectedSongs.some(s => s.id === song.id);
-          const isPlaying = playingPreview === song.id;
           const canSelect = selectedSongs.length < 5 || isSelected;
           
           return (
@@ -263,48 +285,21 @@ export const SongSelector: React.FC<SongSelectorProps> = ({
                 )}
 
                 <div className="flex items-center space-x-4">
-                  {/* Album Art with Play Button */}
+                  {/* Album Art */}
                   <div className="relative">
                     <div className="w-16 h-16 bg-gradient-to-br from-neon-purple to-neon-blue rounded-xl overflow-hidden">
-                      {song.cover_url ? (
-                        <img
-                          src={song.cover_url}
-                          alt={song.title}
-                          className="w-full h-full object-cover"
-                          loading="lazy"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <Music className="w-8 h-8 text-white" />
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Preview Play Button - only show if preview URL exists */}
-                    {song.preview_url && (
-                      <motion.button
-                        className="absolute inset-0 bg-black/50 rounded-xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handlePreviewPlay(song);
+                      <img
+                        src={song.cover_url}
+                        alt={song.title}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          target.parentElement!.innerHTML = '<div class="w-full h-full flex items-center justify-center"><svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg></div>';
                         }}
-                      >
-                        {isPlaying ? (
-                          <Pause className="w-6 h-6 text-white" />
-                        ) : (
-                          <Play className="w-6 h-6 text-white" />
-                        )}
-                      </motion.button>
-                    )}
-
-                    {/* Playing indicator */}
-                    {isPlaying && (
-                      <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-neon-green rounded-full flex items-center justify-center">
-                        <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
-                      </div>
-                    )}
+                      />
+                    </div>
                   </div>
 
                   {/* Song Info */}
@@ -352,17 +347,16 @@ export const SongSelector: React.FC<SongSelectorProps> = ({
                     className="flex items-center space-x-3 p-2 bg-white/5 rounded-lg"
                   >
                     <div className="w-8 h-8 bg-gradient-to-br from-neon-purple to-neon-blue rounded-lg overflow-hidden">
-                      {song.cover_url ? (
-                        <img
-                          src={song.cover_url}
-                          alt={song.title}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <Music className="w-4 h-4 text-white" />
-                        </div>
-                      )}
+                      <img
+                        src={song.cover_url}
+                        alt={song.title}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          target.parentElement!.innerHTML = '<div class="w-full h-full flex items-center justify-center"><svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg></div>';
+                        }}
+                      />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-white text-sm font-medium truncate">
