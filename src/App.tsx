@@ -91,11 +91,9 @@ function AppContent() {
     }
   }, [theme]);
 
-  // Initialize service worker only in production
+  // Initialize service worker
   useEffect(() => {
-    if (import.meta.env.PROD) {
-      serviceWorkerManager.register();
-    }
+    serviceWorkerManager.register();
   }, []);
 
   // Show loading while Clerk is initializing
@@ -196,7 +194,7 @@ function AppContent() {
         onClose={() => setSettingsOpen(false)}
       />
 
-      {import.meta.env.PROD && <InstallPrompt />}
+      <InstallPrompt />
       <ToastContainer />
     </MobileGestures>
   );

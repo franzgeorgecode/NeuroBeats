@@ -1,40 +1,37 @@
+import { Workbox } from 'workbox-window';
+
 class ServiceWorkerManager {
-  private wb: any = null;
+  private wb: Workbox | null = null;
   private registration: ServiceWorkerRegistration | null = null;
 
   async register() {
-    // Only register service worker in production to avoid storage access issues
     if ('serviceWorker' in navigator && import.meta.env.PROD) {
+      this.wb = new Workbox('/sw.js');
+
+      // Add event listeners
+      this.wb.addEventListener('installed', (event) => {
+        if (event.isUpdate) {
+          // Show update available notification
+          this.showUpdateNotification();
+        }
+      });
+
+      this.wb.addEventListener('waiting', () => {
+        // Show update ready notification
+        this.showUpdateReadyNotification();
+      });
+
+      this.wb.addEventListener('controlling', () => {
+        // Reload page when new service worker takes control
+        window.location.reload();
+      });
+
       try {
-        // Use dynamic import to avoid issues in development
-        const { Workbox } = await import('workbox-window');
-        this.wb = new Workbox('/sw.js');
-
-        // Add event listeners
-        this.wb.addEventListener('installed', (event: any) => {
-          if (event.isUpdate) {
-            // Show update available notification
-            this.showUpdateNotification();
-          }
-        });
-
-        this.wb.addEventListener('waiting', () => {
-          // Show update ready notification
-          this.showUpdateReadyNotification();
-        });
-
-        this.wb.addEventListener('controlling', () => {
-          // Reload page when new service worker takes control
-          window.location.reload();
-        });
-
         this.registration = await this.wb.register();
         console.log('Service Worker registered successfully');
       } catch (error) {
-        console.warn('Service Worker registration failed:', error);
+        console.error('Service Worker registration failed:', error);
       }
-    } else {
-      console.log('Service Worker disabled in development mode');
     }
   }
 
@@ -51,16 +48,18 @@ class ServiceWorkerManager {
   }
 
   private showUpdateNotification() {
+    // You can integrate this with your toast system
     console.log('App update available');
   }
 
   private showUpdateReadyNotification() {
+    // You can integrate this with your toast system
     console.log('App update ready');
   }
 
   // Cache management with error handling
   async cacheTrack(trackUrl: string, trackId: string) {
-    if (!this.registration || !trackUrl || !import.meta.env.PROD) return;
+    if (!this.registration || !trackUrl) return;
 
     try {
       const cache = await caches.open('music-cache-v1');
@@ -73,51 +72,68 @@ class ServiceWorkerManager {
         cachedAt: Date.now(),
       };
       
-      // Use in-memory storage only in production
-      console.log('Track cached:', metadata);
+      // Use sessionStorage as fallback, with error handling
+      try {
+        sessionStorage.setItem(`cached-track-${trackId}`, JSON.stringify(metadata));
+      } catch (storageError) {
+        console.warn('Storage access denied, caching in memory only:', storageError);
+      }
     } catch (error) {
-      console.warn('Failed to cache track:', error);
+      console.error('Failed to cache track:', error);
     }
   }
 
   async getCachedTrack(trackId: string): Promise<string | null> {
-    if (!import.meta.env.PROD) return null;
-    
     try {
-      const cache = await caches.open('music-cache-v1');
-      const keys = await cache.keys();
+      let metadata = null;
       
-      // Simple search through cached URLs
-      for (const request of keys) {
-        if (request.url.includes(trackId)) {
-          return request.url;
+      // Try to get from sessionStorage with error handling
+      try {
+        const stored = sessionStorage.getItem(`cached-track-${trackId}`);
+        if (stored) {
+          metadata = JSON.parse(stored);
         }
+      } catch (storageError) {
+        console.warn('Storage access denied:', storageError);
+        return null;
       }
       
-      return null;
+      if (!metadata) return null;
+
+      const { url } = metadata;
+      const cache = await caches.open('music-cache-v1');
+      const response = await cache.match(url);
+      
+      return response ? url : null;
     } catch (error) {
-      console.warn('Failed to get cached track:', error);
+      console.error('Failed to get cached track:', error);
       return null;
     }
   }
 
   async clearCache() {
-    if (!import.meta.env.PROD) return;
-    
     try {
       const cacheNames = await caches.keys();
       await Promise.all(
         cacheNames.map(cacheName => caches.delete(cacheName))
       );
-      console.log('Cache cleared successfully');
+      
+      // Clear sessionStorage metadata with error handling
+      try {
+        Object.keys(sessionStorage).forEach(key => {
+          if (key.startsWith('cached-track-')) {
+            sessionStorage.removeItem(key);
+          }
+        });
+      } catch (storageError) {
+        console.warn('Storage access denied during cleanup:', storageError);
+      }
     } catch (error) {
-      console.warn('Failed to clear cache:', error);
+      console.error('Failed to clear cache:', error);
     }
   }
 
   async getCacheSize(): Promise<number> {
-    if (!import.meta.env.PROD) return 0;
-    
     try {
       if ('storage' in navigator && 'estimate' in navigator.storage) {
         const estimate = await navigator.storage.estimate();
@@ -125,7 +141,7 @@ class ServiceWorkerManager {
       }
       return 0;
     } catch (error) {
-      console.warn('Failed to get cache size:', error);
+      console.error('Failed to get cache size:', error);
       return 0;
     }
   }

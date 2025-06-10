@@ -22,6 +22,28 @@ export default defineConfig({
               },
             },
           },
+          {
+            urlPattern: /^https:\/\/deezerdevs-deezer\.p\.rapidapi\.com\/.*/i,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'deezer-api',
+              expiration: {
+                maxEntries: 50,
+                maxAgeSeconds: 60 * 60, // 1 hour
+              },
+            },
+          },
+          {
+            urlPattern: /\.(?:mp3|wav|ogg)$/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'audio-cache',
+              expiration: {
+                maxEntries: 30,
+                maxAgeSeconds: 60 * 60 * 24 * 7, // 7 days
+              },
+            },
+          },
         ],
         // Disable storage access for service worker
         skipWaiting: true,
