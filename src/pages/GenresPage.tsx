@@ -104,7 +104,7 @@ export const GenresPage: React.FC = () => {
   const [showGenreSettings, setShowGenreSettings] = useState(false);
   const [userGenres, setUserGenres] = useState<string[]>([]);
   
-  const { useSearchSongs, deezerService } = useDeezer();
+  const { useSearchSongs, useTopTracksByGenre, deezerService } = useDeezer();
   const { setCurrentTrack, setIsPlaying, addToQueue } = usePlayerStore();
   const { profile, updatePreferences } = useUser();
   const { showToast } = useToast();
@@ -116,9 +116,12 @@ export const GenresPage: React.FC = () => {
     }
   }, [profile]);
 
-  // Search for top tracks in selected genre
-  const genreQuery = selectedGenre ? `genre:"${selectedGenre.name}"` : '';
-  const { data: genreTracks, isLoading } = useSearchSongs(genreQuery, 15);
+  // Fetch top tracks for the selected genre
+  const {
+    data: topTracksByGenreResponse,
+    isLoading,
+    error
+  } = useTopTracksByGenre(selectedGenre?.id!, 15);
 
   const handlePlayTrack = (deezerTrack: any) => {
     try {
@@ -247,7 +250,7 @@ export const GenresPage: React.FC = () => {
                 Top {selectedGenre.name} Tracks
               </h2>
               <span className="text-gray-400">
-                {genreTracks?.data?.length || 0} tracks
+                {topTracksByGenreResponse?.data?.length || 0} tracks
               </span>
             </div>
 
@@ -266,19 +269,10 @@ export const GenresPage: React.FC = () => {
                 ? 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6' 
                 : 'space-y-2'
               }>
-                {genreTracks?.data?.map((track, index) => (
+                {topTracksByGenreResponse?.data?.map((track, index) => (
                   <SongCard
                     key={track.id}
-                    song={{
-                      id: track.id,
-                      title: track.title,
-                      artist: track.artist.name,
-                      album: track.album?.title,
-                      duration: track.duration,
-                      cover_url: track.album?.cover_xl,
-                      audio_url: track.preview,
-                      plays_count: track.rank,
-                    }}
+                    song={deezerService.convertToTrack(track)}
                     variant={viewMode === 'grid' ? 'default' : 'list'}
                     index={index}
                     showIndex={viewMode === 'list'}
@@ -288,8 +282,8 @@ export const GenresPage: React.FC = () => {
                 ))}
               </div>
             )}
-
-            {!isLoading && (!genreTracks?.data || genreTracks.data.length === 0) && (
+            {error && <p className="text-red-500">Error loading tracks for this genre.</p>}
+            {!isLoading && !error && (!topTracksByGenreResponse?.data || topTracksByGenreResponse.data.length === 0) && (
               <div className="text-center py-12">
                 <Music className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-xl font-semibold text-white mb-2">

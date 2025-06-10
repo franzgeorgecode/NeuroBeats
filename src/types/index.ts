@@ -12,6 +12,8 @@ export interface Track {
   title: string;
   artist: string;
   album?: string;
+  artistId?: string;
+  albumId?: string;
   duration: number;
   cover_url?: string;
   audio_url: string;

@@ -22,6 +22,8 @@ import { LibraryPage } from './pages/LibraryPage';
 import { AIPlaylistPage } from './pages/AIPlaylistPage';
 import { AuthPage } from './pages/AuthPage';
 import { SearchPage } from './pages/SearchPage';
+import { ArtistPage } from './pages/ArtistPage';
+import { AlbumPage } from './pages/AlbumPage';
 import { UserProfile } from './components/auth/UserProfile';
 import { useAppStore } from './stores/appStore';
 import { useOnboarding } from './hooks/useOnboarding';
@@ -192,6 +194,22 @@ function App() {
                 <AuthPage />
               </ProtectedRoute>
             } 
+          />
+          <Route
+            path="/artist/:artistId"
+            element={
+              <ProtectedRoute requireAuth={true}>
+                <ArtistPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/album/:albumId"
+            element={
+              <ProtectedRoute requireAuth={true}>
+                <AlbumPage />
+              </ProtectedRoute>
+            }
           />
           <Route 
             path="/*" 

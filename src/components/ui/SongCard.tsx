@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { 
   Play, 
   Pause, 
@@ -19,6 +20,8 @@ interface SongCardProps {
     title: string;
     artist: string;
     album?: string;
+    artistId?: string;
+    albumId?: string;
     duration: number;
     cover_url?: string;
     audio_url: string;
@@ -46,6 +49,7 @@ export const SongCard: React.FC<SongCardProps> = ({
   const [isLiked, setIsLiked] = useState(false);
   const [showActions, setShowActions] = useState(false);
   const { currentTrack, isPlaying, setCurrentTrack, setIsPlaying } = usePlayerStore();
+  const navigate = useNavigate();
 
   const isCurrentTrack = currentTrack?.id === song.id;
   const isCurrentlyPlaying = isCurrentTrack && isPlaying;
@@ -152,7 +156,13 @@ export const SongCard: React.FC<SongCardProps> = ({
               }`}>
                 {song.title}
               </h3>
-              <p className="text-gray-400 text-sm truncate">
+              <p
+                className="text-gray-400 text-sm truncate cursor-pointer hover:underline"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (song.artistId) navigate(`/artist/${song.artistId}`);
+                }}
+              >
                 {song.artist}
               </p>
             </div>
@@ -241,9 +251,32 @@ export const SongCard: React.FC<SongCardProps> = ({
             }`}>
               {song.title}
             </h3>
-            <p className="text-gray-400 text-sm truncate">
-              {song.artist} {song.album && `• ${song.album}`}
-            </p>
+            <div className="text-gray-400 text-sm truncate">
+              <span
+                className={song.artistId ? "cursor-pointer hover:underline" : ""}
+                onClick={(e) => {
+                  if (song.artistId) {
+                    e.stopPropagation();
+                    navigate(`/artist/${song.artistId}`);
+                  }
+                }}
+              >
+                {song.artist}
+              </span>
+              {song.album && (
+                <span
+                  className={song.albumId ? "cursor-pointer hover:underline" : ""}
+                  onClick={(e) => {
+                    if (song.albumId) {
+                      e.stopPropagation();
+                      navigate(`/album/${song.albumId}`);
+                    }
+                  }}
+                >
+                  {` • ${song.album}`}
+                </span>
+              )}
+            </div>
           </div>
 
           {song.plays_count && (
@@ -364,11 +397,23 @@ export const SongCard: React.FC<SongCardProps> = ({
           }`}>
             {song.title}
           </h3>
-          <p className="text-gray-400 text-sm truncate mb-2">
+          <p
+            className="text-gray-400 text-sm truncate mb-2 cursor-pointer hover:underline"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (song.artistId) navigate(`/artist/${song.artistId}`);
+            }}
+          >
             {song.artist}
           </p>
           {song.album && (
-            <p className="text-gray-500 text-xs truncate mb-2">
+            <p
+              className="text-gray-500 text-xs truncate mb-2 cursor-pointer hover:underline"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (song.albumId) navigate(`/album/${song.albumId}`);
+              }}
+            >
               {song.album}
             </p>
           )}
