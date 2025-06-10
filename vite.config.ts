@@ -45,6 +45,9 @@ export default defineConfig({
             },
           },
         ],
+        // Disable storage access for service worker
+        skipWaiting: true,
+        clientsClaim: true,
       },
       manifest: {
         name: 'NeuroBeats - AI Music Player',
@@ -57,8 +60,44 @@ export default defineConfig({
         start_url: '/',
         icons: [
           {
+            src: '/icons/icon-72x72.png',
+            sizes: '72x72',
+            type: 'image/png',
+            purpose: 'maskable any'
+          },
+          {
+            src: '/icons/icon-96x96.png',
+            sizes: '96x96',
+            type: 'image/png',
+            purpose: 'maskable any'
+          },
+          {
+            src: '/icons/icon-128x128.png',
+            sizes: '128x128',
+            type: 'image/png',
+            purpose: 'maskable any'
+          },
+          {
+            src: '/icons/icon-144x144.png',
+            sizes: '144x144',
+            type: 'image/png',
+            purpose: 'maskable any'
+          },
+          {
+            src: '/icons/icon-152x152.png',
+            sizes: '152x152',
+            type: 'image/png',
+            purpose: 'maskable any'
+          },
+          {
             src: '/icons/icon-192x192.png',
             sizes: '192x192',
+            type: 'image/png',
+            purpose: 'maskable any'
+          },
+          {
+            src: '/icons/icon-384x384.png',
+            sizes: '384x384',
             type: 'image/png',
             purpose: 'maskable any'
           },
@@ -75,19 +114,19 @@ export default defineConfig({
             short_name: 'Search',
             description: 'Search for songs, artists, and albums',
             url: '/search',
-            icons: [{ src: '/icons/search-96x96.png', sizes: '96x96' }]
+            icons: [{ src: '/icons/icon-96x96.png', sizes: '96x96' }]
           },
           {
             name: 'AI Playlist',
             short_name: 'AI Playlist',
             description: 'Generate AI-powered playlists',
             url: '/ai-playlist',
-            icons: [{ src: '/icons/ai-96x96.png', sizes: '96x96' }]
+            icons: [{ src: '/icons/icon-96x96.png', sizes: '96x96' }]
           }
         ]
       },
       devOptions: {
-        enabled: true
+        enabled: false // Disable in development to avoid storage issues
       }
     })
   ],

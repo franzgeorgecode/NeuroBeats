@@ -5,7 +5,7 @@ class ServiceWorkerManager {
   private registration: ServiceWorkerRegistration | null = null;
 
   async register() {
-    if ('serviceWorker' in navigator) {
+    if ('serviceWorker' in navigator && import.meta.env.PROD) {
       this.wb = new Workbox('/sw.js');
 
       // Add event listeners
@@ -57,22 +57,27 @@ class ServiceWorkerManager {
     console.log('App update ready');
   }
 
-  // Cache management
+  // Cache management with error handling
   async cacheTrack(trackUrl: string, trackId: string) {
-    if (!this.registration) return;
+    if (!this.registration || !trackUrl) return;
 
     try {
       const cache = await caches.open('music-cache-v1');
       await cache.add(trackUrl);
       
-      // Store metadata
+      // Store metadata in memory instead of localStorage to avoid storage access issues
       const metadata = {
         id: trackId,
         url: trackUrl,
         cachedAt: Date.now(),
       };
       
-      localStorage.setItem(`cached-track-${trackId}`, JSON.stringify(metadata));
+      // Use sessionStorage as fallback, with error handling
+      try {
+        sessionStorage.setItem(`cached-track-${trackId}`, JSON.stringify(metadata));
+      } catch (storageError) {
+        console.warn('Storage access denied, caching in memory only:', storageError);
+      }
     } catch (error) {
       console.error('Failed to cache track:', error);
     }
@@ -80,10 +85,22 @@ class ServiceWorkerManager {
 
   async getCachedTrack(trackId: string): Promise<string | null> {
     try {
-      const metadata = localStorage.getItem(`cached-track-${trackId}`);
+      let metadata = null;
+      
+      // Try to get from sessionStorage with error handling
+      try {
+        const stored = sessionStorage.getItem(`cached-track-${trackId}`);
+        if (stored) {
+          metadata = JSON.parse(stored);
+        }
+      } catch (storageError) {
+        console.warn('Storage access denied:', storageError);
+        return null;
+      }
+      
       if (!metadata) return null;
 
-      const { url } = JSON.parse(metadata);
+      const { url } = metadata;
       const cache = await caches.open('music-cache-v1');
       const response = await cache.match(url);
       
@@ -101,12 +118,16 @@ class ServiceWorkerManager {
         cacheNames.map(cacheName => caches.delete(cacheName))
       );
       
-      // Clear localStorage metadata
-      Object.keys(localStorage).forEach(key => {
-        if (key.startsWith('cached-track-')) {
-          localStorage.removeItem(key);
-        }
-      });
+      // Clear sessionStorage metadata with error handling
+      try {
+        Object.keys(sessionStorage).forEach(key => {
+          if (key.startsWith('cached-track-')) {
+            sessionStorage.removeItem(key);
+          }
+        });
+      } catch (storageError) {
+        console.warn('Storage access denied during cleanup:', storageError);
+      }
     } catch (error) {
       console.error('Failed to clear cache:', error);
     }

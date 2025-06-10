@@ -66,16 +66,19 @@ export const OnboardingFlow: React.FC = () => {
   const confirmSkip = async () => {
     setIsLoading(true);
     try {
-      await user?.update({
-        publicMetadata: {
-          ...user.publicMetadata,
-          onboardingCompleted: true,
-          favoriteGenres: [],
-          selectedSongs: [],
-        }
-      });
+      if (user) {
+        await user.update({
+          publicMetadata: {
+            ...user.publicMetadata,
+            onboardingCompleted: true,
+            favoriteGenres: [],
+            selectedSongs: [],
+          }
+        });
+      }
       showToast('Onboarding skipped. You can update preferences later.', 'info');
     } catch (error) {
+      console.error('Error skipping onboarding:', error);
       showToast('Error skipping onboarding', 'error');
     } finally {
       setIsLoading(false);
@@ -86,18 +89,21 @@ export const OnboardingFlow: React.FC = () => {
   const handleComplete = async () => {
     setIsLoading(true);
     try {
-      await user?.update({
-        publicMetadata: {
-          ...user.publicMetadata,
-          onboardingCompleted: true,
-          favoriteGenres: selectedGenres,
-          selectedSongs: selectedSongs,
-        }
-      });
+      if (user) {
+        await user.update({
+          publicMetadata: {
+            ...user.publicMetadata,
+            onboardingCompleted: true,
+            favoriteGenres: selectedGenres,
+            selectedSongs: selectedSongs,
+          }
+        });
+      }
       
       setCurrentStep(3); // Move to complete screen
       showToast('Welcome to NeuroBeats! Your preferences have been saved.', 'success');
     } catch (error) {
+      console.error('Error saving preferences:', error);
       showToast('Error saving preferences', 'error');
     } finally {
       setIsLoading(false);
@@ -169,7 +175,7 @@ export const OnboardingFlow: React.FC = () => {
                 <Sparkles className="w-6 h-6 text-white" />
               </div>
               <h1 className="text-2xl font-space font-bold text-white">
-                Neuro Beats Setup
+                NeuroBeats Setup
               </h1>
             </div>
 

@@ -17,20 +17,28 @@ export const SongSelector: React.FC<SongSelectorProps> = ({
   onSongToggle,
 }) => {
   const { useTopTracks, deezerService } = useDeezer();
-  const { data: topTracksData, isLoading } = useTopTracks(30);
+  const { data: topTracksData, isLoading, error } = useTopTracks(30);
   const [playingPreview, setPlayingPreview] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
 
   const handlePreviewPlay = (song: SelectedSong) => {
-    if (!audioRef.current) return;
+    if (!audioRef.current || !song.preview_url) return;
 
-    if (playingPreview === song.id) {
-      audioRef.current.pause();
+    try {
+      if (playingPreview === song.id) {
+        audioRef.current.pause();
+        setPlayingPreview(null);
+      } else {
+        audioRef.current.src = song.preview_url;
+        audioRef.current.play().catch((error) => {
+          console.warn('Audio playback failed:', error);
+          // Don't show error to user, just fail silently
+        });
+        setPlayingPreview(song.id);
+      }
+    } catch (error) {
+      console.warn('Audio preview error:', error);
       setPlayingPreview(null);
-    } else {
-      audioRef.current.src = song.preview_url;
-      audioRef.current.play().catch(console.error);
-      setPlayingPreview(song.id);
     }
   };
 
@@ -43,8 +51,8 @@ export const SongSelector: React.FC<SongSelectorProps> = ({
       id: deezerTrack.id,
       title: deezerTrack.title,
       artist: deezerTrack.artist.name,
-      preview_url: deezerTrack.preview,
-      cover_url: deezerTrack.album.cover_medium,
+      preview_url: deezerTrack.preview || '',
+      cover_url: deezerTrack.album?.cover_medium || deezerTrack.album?.cover_big,
       duration: deezerTrack.duration,
     };
   };
@@ -54,6 +62,39 @@ export const SongSelector: React.FC<SongSelectorProps> = ({
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
+
+  // Show error state if API fails
+  if (error) {
+    return (
+      <div className="text-center">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-8"
+        >
+          <h2 className="text-4xl font-space font-bold text-white mb-4">
+            Choose Your Favorite Songs
+          </h2>
+          <p className="text-xl text-gray-300 mb-2">
+            Select exactly 5 songs to complete your music profile
+          </p>
+        </motion.div>
+
+        <GlassCard className="p-8 text-center">
+          <Music className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-xl font-semibold text-white mb-2">
+            Unable to load songs
+          </h3>
+          <p className="text-gray-400 mb-4">
+            We're having trouble connecting to the music service. You can skip this step for now.
+          </p>
+          <p className="text-sm text-gray-500">
+            You can always add your favorite songs later in your profile settings.
+          </p>
+        </GlassCard>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -77,6 +118,78 @@ export const SongSelector: React.FC<SongSelectorProps> = ({
       </div>
     );
   }
+
+  // Use fallback songs if no data available
+  const fallbackSongs = [
+    {
+      id: 'fallback-1',
+      title: 'Blinding Lights',
+      artist: 'The Weeknd',
+      preview_url: '',
+      cover_url: 'https://images.pexels.com/photos/1763075/pexels-photo-1763075.jpeg',
+      duration: 200,
+    },
+    {
+      id: 'fallback-2',
+      title: 'Watermelon Sugar',
+      artist: 'Harry Styles',
+      preview_url: '',
+      cover_url: 'https://images.pexels.com/photos/1644888/pexels-photo-1644888.jpeg',
+      duration: 174,
+    },
+    {
+      id: 'fallback-3',
+      title: 'Good 4 U',
+      artist: 'Olivia Rodrigo',
+      preview_url: '',
+      cover_url: 'https://images.pexels.com/photos/1540406/pexels-photo-1540406.jpeg',
+      duration: 178,
+    },
+    {
+      id: 'fallback-4',
+      title: 'Levitating',
+      artist: 'Dua Lipa',
+      preview_url: '',
+      cover_url: 'https://images.pexels.com/photos/1389429/pexels-photo-1389429.jpeg',
+      duration: 203,
+    },
+    {
+      id: 'fallback-5',
+      title: 'Stay',
+      artist: 'The Kid LAROI & Justin Bieber',
+      preview_url: '',
+      cover_url: 'https://images.pexels.com/photos/1190297/pexels-photo-1190297.jpeg',
+      duration: 141,
+    },
+    {
+      id: 'fallback-6',
+      title: 'Heat Waves',
+      artist: 'Glass Animals',
+      preview_url: '',
+      cover_url: 'https://images.pexels.com/photos/1105666/pexels-photo-1105666.jpeg',
+      duration: 238,
+    },
+    {
+      id: 'fallback-7',
+      title: 'As It Was',
+      artist: 'Harry Styles',
+      preview_url: '',
+      cover_url: 'https://images.pexels.com/photos/1407322/pexels-photo-1407322.jpeg',
+      duration: 167,
+    },
+    {
+      id: 'fallback-8',
+      title: 'Anti-Hero',
+      artist: 'Taylor Swift',
+      preview_url: '',
+      cover_url: 'https://images.pexels.com/photos/164821/pexels-photo-164821.jpeg',
+      duration: 200,
+    },
+  ];
+
+  const songsToShow = topTracksData?.data?.length > 0 
+    ? topTracksData.data.slice(0, 24).map(convertDeezerToSelectedSong)
+    : fallbackSongs;
 
   return (
     <div className="text-center">
@@ -102,7 +215,7 @@ export const SongSelector: React.FC<SongSelectorProps> = ({
           {selectedSongs.length}/5 songs selected
         </p>
         <p className="text-sm text-gray-400 mt-2">
-          Hover over a song to preview it for 30 seconds
+          Click on songs to add them to your profile
         </p>
       </motion.div>
 
@@ -112,8 +225,7 @@ export const SongSelector: React.FC<SongSelectorProps> = ({
         transition={{ duration: 0.6, delay: 0.2 }}
         className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto"
       >
-        {topTracksData?.data?.slice(0, 24).map((track, index) => {
-          const song = convertDeezerToSelectedSong(track);
+        {songsToShow.map((song, index) => {
           const isSelected = selectedSongs.some(s => s.id === song.id);
           const isPlaying = playingPreview === song.id;
           const canSelect = selectedSongs.length < 5 || isSelected;
@@ -168,22 +280,24 @@ export const SongSelector: React.FC<SongSelectorProps> = ({
                       )}
                     </div>
 
-                    {/* Preview Play Button */}
-                    <motion.button
-                      className="absolute inset-0 bg-black/50 rounded-xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handlePreviewPlay(song);
-                      }}
-                    >
-                      {isPlaying ? (
-                        <Pause className="w-6 h-6 text-white" />
-                      ) : (
-                        <Play className="w-6 h-6 text-white" />
-                      )}
-                    </motion.button>
+                    {/* Preview Play Button - only show if preview URL exists */}
+                    {song.preview_url && (
+                      <motion.button
+                        className="absolute inset-0 bg-black/50 rounded-xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handlePreviewPlay(song);
+                        }}
+                      >
+                        {isPlaying ? (
+                          <Pause className="w-6 h-6 text-white" />
+                        ) : (
+                          <Play className="w-6 h-6 text-white" />
+                        )}
+                      </motion.button>
+                    )}
 
                     {/* Playing indicator */}
                     {isPlaying && (
